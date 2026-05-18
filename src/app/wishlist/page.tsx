@@ -65,7 +65,7 @@ export default function WishlistPage() {
                         {item.name}
                       </h3>
                     </Link>
-                    <p className="text-lg font-extrabold text-accent">KES {item.price.toLocaleString()}</p>
+                    <p className="text-lg font-extrabold text-accent">KES {(item.price ?? 0).toLocaleString()}</p>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => {

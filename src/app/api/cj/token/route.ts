@@ -8,8 +8,8 @@ export async function POST() {
     return NextResponse.json({ accessToken: cachedToken.token });
   }
 
-  const email = process.env.CJ_API_KEY;
-  const password = process.env.CJ_API_SECRET;
+  const email = process.env.CJ_EMAIL;
+  const password = process.env.CJ_API_KEY;
 
   if (!email || !password) {
     return NextResponse.json({ error: "CJ API credentials not configured" }, { status: 500 });
@@ -24,7 +24,7 @@ export async function POST() {
 
     const json = await res.json();
 
-    if (!res.ok || !json.data?.accessToken) {
+    if (json.code !== 200 || !json.data?.accessToken) {
       console.error("CJ token error:", json);
       return NextResponse.json({ error: "Failed to authenticate with CJ" }, { status: 500 });
     }

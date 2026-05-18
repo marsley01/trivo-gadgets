@@ -26,8 +26,8 @@ RESEND_API_KEY=your_resend_api_key
 NEXT_PUBLIC_WHATSAPP_NUMBER=254757512769
 
 # CJ Dropshipping (optional — for product import feature):
-CJ_API_KEY=your_cj_dropshipping_email
-CJ_API_SECRET=your_cj_dropshipping_password
+CJ_EMAIL=your_cj_dropshipping_account_email
+CJ_API_KEY=your_cj_dropshipping_api_key
 ```
 
 ### 3. Setup Supabase

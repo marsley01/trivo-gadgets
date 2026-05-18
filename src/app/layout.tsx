@@ -10,6 +10,7 @@ import ChatWidget from "@/components/chat/ChatWidget";
 import PushNotificationPrompt from "@/components/notifications/PushNotificationPrompt";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { WHATSAPP_NUMBER } from "@/lib/config";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
@@ -21,8 +22,6 @@ export const viewport: Viewport = {
   themeColor: "#0a0a0a",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
 };
 
 export const metadata: Metadata = {
@@ -70,7 +69,7 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="color-scheme" content="dark light" />
         <script dangerouslySetInnerHTML={{
-          __html: `(function(){try{var e=localStorage.getItem("trivo_theme")||"light";document.documentElement.className=e}catch(e){}})()`,
+          __html: `(function(){try{var e=localStorage.getItem("trivo_theme")||"dark";document.documentElement.className=e}catch(e){}})()`,
         }} />
       </head>
       <body className={`${inter.variable} font-sans bg-background text-foreground antialiased min-h-screen flex flex-col overflow-x-hidden selection:bg-accent selection:text-black`}>
@@ -118,7 +117,7 @@ export default function RootLayout({
         />
         {/* Floating WhatsApp FAB */}
         <a
-          href={`https://wa.me/${"254757512769"}`}
+          href={`https://wa.me/${WHATSAPP_NUMBER}`}
           target="_blank"
           rel="noopener noreferrer"
           className="fixed bottom-24 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[#2563EB] text-white shadow-lg transition-transform hover:scale-110 active:scale-95"

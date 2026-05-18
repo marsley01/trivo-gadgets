@@ -18,9 +18,9 @@ export default function ProductCard({ product }: { product: Product }) {
   const wished = hasItem(product.id);
 
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-2xl bg-card transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_30px_rgba(37,211,102,0.15)] border border-subtle/20 hover:border-accent/40">
+    <div className="group relative flex flex-col overflow-hidden rounded-2xl bg-card transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_30px_rgba(37,211,102,0.15)] border border-transparent hover:border-accent/40">
       {/* Top Image Container */}
-      <Link href={`/products/${product.id}`} className="relative aspect-square sm:aspect-[4/5] w-full overflow-hidden bg-white flex items-center justify-center p-4 sm:p-6">
+      <Link href={`/products/${product.id}`} className="relative aspect-square sm:aspect-[4/5] w-full overflow-hidden bg-surface flex items-center justify-center p-4 sm:p-6">
         <Image
           src={product.image_url || "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?q=80&w=600&auto=format&fit=crop"}
           alt={product.name}
@@ -80,7 +80,7 @@ export default function ProductCard({ product }: { product: Product }) {
         </div>
 
         {/* Bottom Row: Price + Actions */}
-        <div className="flex items-center justify-between mt-auto pt-3 border-t border-subtle/20">
+        <div className="flex items-center justify-between mt-auto pt-3">
           <div className="flex flex-col">
             <span className="text-xs text-muted-foreground line-through font-medium">
               KSh {Math.round(product.price * 1.15).toLocaleString()}
@@ -94,7 +94,7 @@ export default function ProductCard({ product }: { product: Product }) {
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => addToCart(product)}
-                className="h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-surface hover:bg-accent hover:text-black transition-all flex items-center justify-center border border-subtle/30 text-foreground hover:scale-110 active:scale-95 shadow-md shrink-0"
+                className="h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-surface hover:bg-accent hover:text-black transition-all flex items-center justify-center text-foreground hover:scale-110 active:scale-95 shadow-md shrink-0"
                 aria-label="Add to cart"
               >
                 <ShoppingCart className="h-4 sm:h-4.5 w-4 sm:w-4.5" />

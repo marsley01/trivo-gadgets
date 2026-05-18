@@ -22,7 +22,7 @@ export default async function SearchPage({
   const supabase = createClient();
   let products: Database["public"]["Tables"]["products"]["Row"][] = [];
 
-  if (query) {
+  if (query.length >= 2) {
     const { data } = await supabase
       .from("products")
       .select("*")
@@ -44,11 +44,13 @@ export default async function SearchPage({
 
           <h1 className="text-3xl font-extrabold text-foreground mb-2">Search Results</h1>
           <p className="text-sm text-muted mb-8">
-            {query ? (
+            {query && query.length >= 2 ? (
               <>
                 Showing results for <span className="text-foreground font-medium">&ldquo;{query}&rdquo;</span>
                 &mdash; {products.length} {products.length === 1 ? "product" : "products"} found
               </>
+            ) : query && query.length === 1 ? (
+              "Please enter at least 2 characters to search."
             ) : (
               "Enter a search term to find products."
             )}
@@ -60,7 +62,7 @@ export default async function SearchPage({
                 <ProductCard key={p.id} product={p} />
               ))}
             </div>
-          ) : query ? (
+          ) : query && query.length >= 2 ? (
             <div className="flex flex-col items-center justify-center py-24 text-center">
               <div className="text-5xl mb-4 text-muted-foreground/30">🔍</div>
               <h3 className="text-lg font-bold text-foreground mb-2">No products found</h3>

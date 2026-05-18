@@ -3,6 +3,7 @@ import { Database } from "@/types/database.types";
 import { notFound } from "next/navigation";
 import { CheckCircle } from "lucide-react";
 import PrintButton from "@/components/receipt/PrintButton";
+import { WHATSAPP_NUMBER } from "@/lib/config";
 
 type AdminOrder = Database["public"]["Tables"]["admin_orders"]["Row"];
 
@@ -156,7 +157,7 @@ export default async function ReceiptPage({
           <div className="text-center space-y-2">
             <p className="text-sm text-neutral-400">Thank you for shopping with Trivo Kenya</p>
             <a
-              href="https://wa.me/254757512769"
+              href={`https://wa.me/${WHATSAPP_NUMBER}`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-sm text-[#2563EB] hover:underline block"

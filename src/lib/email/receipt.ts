@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { WHATSAPP_NUMBER } from "@/lib/config";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -164,7 +165,7 @@ export async function sendReceiptEmail(params: {
               <tr>
                 <td align="center" style="padding: 16px 0 0 0;">
                   <p style="font-size: 14px; color: #737373; margin: 0 0 8px 0;">Thank you for shopping with Trivo Kenya</p>
-                  <a href="https://wa.me/254757512769" style="font-size: 14px; color: #2563EB; text-decoration: underline; margin: 0;">Questions? WhatsApp us: +254757512769</a>
+                  <a href="https://wa.me/${WHATSAPP_NUMBER}" style="font-size: 14px; color: #2563EB; text-decoration: underline; margin: 0;">Questions? WhatsApp us: +${WHATSAPP_NUMBER}</a>
                   <p style="font-size: 10px; color: #525252; margin: 8px 0 0 0;">Keep this receipt for your records</p>
                 </td>
               </tr>

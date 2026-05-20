@@ -28,7 +28,7 @@ export async function createProduct(formData: FormData) {
   const cj_product_id = formData.get("cj_product_id") as string;
 
   if (is_featured) {
-    await supabase.from("products").update({ is_featured: false }).neq("id", "placeholder");
+    await supabase.from("products").update({ is_featured: false });
   }
 
   const { error } = await supabase.from("products").insert({

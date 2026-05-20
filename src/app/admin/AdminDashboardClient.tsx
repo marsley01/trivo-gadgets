@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Database } from "@/types/database.types";
 import { createProduct, updateProduct, deleteProduct, createOrder, updateOrderStatus, deleteOrder, createVendor, updateVendor, deleteVendor } from "@/lib/actions/admin";
 import { analyzeProductSEO, getGradeColor, getGradeBg } from "@/lib/seo";
-import { Package, Users, AlertTriangle, PackageOpen, Plus, X, Edit2, Trash2, BarChart3, DollarSign, ShoppingCart, Truck, Send, Eye, ExternalLink, Download, Loader2, ChevronLeft } from "lucide-react";
+import { Package, Users, AlertTriangle, PackageOpen, Plus, X, Edit2, Trash2, BarChart3, DollarSign, ShoppingCart, Truck, Send, Eye, ExternalLink, Download, Loader2, ChevronLeft, Menu, LogOut } from "lucide-react";
 
 type Product = Database["public"]["Tables"]["products"]["Row"];
 type AdminOrder = Database["public"]["Tables"]["admin_orders"]["Row"];
@@ -69,8 +69,9 @@ export default function AdminDashboardClient({
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [showNewTransaction, setShowNewTransaction] = useState(false);
   const [showAddVendor, setShowAddVendor] = useState(false);
+  const [showAddVendor, setShowAddVendor] = useState(false);
   const [editingVendorId, setEditingVendorId] = useState<string | null>(null);
-
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   // CJ Import state
   const [cjInput, setCjInput] = useState("");
   const [cjFetching, setCjFetching] = useState(false);
@@ -401,41 +402,88 @@ export default function AdminDashboardClient({
   const productCountForVendor = (vendorId: string) => products.filter((p) => p.vendor_id === vendorId).length;
 
   return (
-    <div className="space-y-8">
-      <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+    <div className="flex h-screen bg-neutral-50 dark:bg-neutral-900 overflow-hidden text-foreground">
+      {/* Overlay for mobile sidebar */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
 
-      {/* Stats Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={Package} label="Total Products" value={stats.totalProducts} />
-        <StatCard icon={PackageOpen} label="Total Stock" value={stats.totalStock} />
-        <StatCard icon={Users} label="Subscribers" value={stats.subscribersCount} />
-        <StatCard icon={AlertTriangle} label="Low Stock" value={stats.lowStock} warning valueRed />
-        <StatCard icon={ShoppingCart} label="Total Orders" value={ordersCount} />
-        <StatCard icon={DollarSign} label="Revenue" value={`KES ${revenue.toLocaleString()}`} />
-        <StatCard icon={Truck} label="Pending Dispatch" value={pendingDispatch} />
-      </div>
-
-      {/* Tab Navigation */}
-      <div className="flex items-center gap-1 border-b border-default mb-6 overflow-x-auto">
-        {[
-          { id: "products" as const, label: "Products", icon: Package },
-          { id: "seo" as const, label: "SEO Audit", icon: BarChart3 },
-          { id: "transactions" as const, label: "Transactions", icon: ShoppingCart },
-          { id: "vendors" as const, label: "Vendors", icon: Users },
-          { id: "import" as const, label: "Import", icon: Download },
-        ].map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-[1px] whitespace-nowrap ${
-              tab === t.id ? "border-accent text-foreground" : "border-transparent text-muted hover:text-foreground"
-            }`}
-          >
-            <t.icon className="h-4 w-4 inline mr-1.5" />
-            {t.label}
+      {/* Sidebar */}
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-neutral-950 text-white transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+        <div className="flex items-center justify-between h-16 px-6 border-b border-neutral-800">
+          <span className="text-xl font-bold tracking-tight text-white">
+            TRIVO <span className="text-accent">ADMIN</span>
+          </span>
+          <button onClick={() => setIsSidebarOpen(false)} className="md:hidden text-neutral-400 hover:text-white">
+            <X className="h-5 w-5" />
           </button>
-        ))}
-      </div>
+        </div>
+        <nav className="p-4 space-y-1">
+          {[
+            { id: "products" as const, label: "Products", icon: Package },
+            { id: "seo" as const, label: "SEO Audit", icon: BarChart3 },
+            { id: "transactions" as const, label: "Transactions", icon: ShoppingCart },
+            { id: "vendors" as const, label: "Vendors", icon: Users },
+            { id: "import" as const, label: "Import", icon: Download },
+          ].map((t) => (
+            <button
+              key={t.id}
+              onClick={() => { setTab(t.id); setIsSidebarOpen(false); }}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                tab === t.id 
+                  ? "bg-accent text-white shadow-lg shadow-accent/20" 
+                  : "text-neutral-400 hover:bg-neutral-800 hover:text-white"
+              }`}
+            >
+              <t.icon className="h-5 w-5" />
+              {t.label}
+            </button>
+          ))}
+        </nav>
+      </aside>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-background">
+        {/* Topbar */}
+        <header className="h-16 bg-card border-b border-default flex items-center justify-between px-4 md:px-8 shrink-0">
+          <div className="flex items-center gap-4">
+            <button onClick={() => setIsSidebarOpen(true)} className="md:hidden text-muted-foreground hover:text-foreground">
+              <Menu className="h-6 w-6" />
+            </button>
+            <h1 className="text-xl font-bold text-foreground capitalize hidden md:block">{tab}</h1>
+          </div>
+          <div className="flex items-center gap-4">
+            <form action="/auth/signout" method="post">
+              <input type="hidden" name="redirect" value="/admin/login" />
+              <button
+                type="submit"
+                className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors bg-surface hover:bg-surface/80 px-4 py-2 rounded-lg"
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="hidden sm:inline">Log Out</span>
+              </button>
+            </form>
+          </div>
+        </header>
+
+        {/* Scrollable Content Area */}
+        <main className="flex-1 overflow-y-auto p-4 md:p-8">
+          <div className="max-w-7xl mx-auto space-y-8">
+            <h1 className="text-2xl font-bold text-foreground md:hidden capitalize">{tab}</h1>
+
+            {/* Stats Row */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <StatCard icon={Package} label="Total Products" value={stats.totalProducts} />
+              <StatCard icon={PackageOpen} label="Total Stock" value={stats.totalStock} />
+              <StatCard icon={Users} label="Subscribers" value={stats.subscribersCount} />
+              <StatCard icon={AlertTriangle} label="Low Stock" value={stats.lowStock} warning valueRed />
+              <StatCard icon={ShoppingCart} label="Total Orders" value={ordersCount} />
+              <StatCard icon={DollarSign} label="Revenue" value={`KES ${revenue.toLocaleString()}`} />
+              <StatCard icon={Truck} label="Pending Dispatch" value={pendingDispatch} />
+            </div>
 
       {/* ============ PRODUCTS TAB ============ */}
       {tab === "products" && (
@@ -1261,6 +1309,9 @@ export default function AdminDashboardClient({
             {t.message}
           </div>
         ))}
+      </div>
+          </div>
+        </main>
       </div>
     </div>
   );

@@ -47,8 +47,7 @@ export async function middleware(request: NextRequest) {
       .single();
 
     if (!adminUser) {
-      await supabase.auth.signOut();
-      return NextResponse.redirect(new URL("/admin/login", request.url));
+      return NextResponse.redirect(new URL("/account", request.url));
     }
   }
 

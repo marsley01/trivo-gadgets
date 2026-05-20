@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import Image from "next/image";
 import { Database } from "@/types/database.types";
 import { getVendorProducts, getVendorOrders, updateProductStock, createVendorProduct } from "@/lib/actions/vendor";
-import { Package, PackageOpen, ShoppingCart, DollarSign, Plus, X, Edit2, ExternalLink, Save } from "lucide-react";
+import { Package, PackageOpen, ShoppingCart, DollarSign, Plus, X, Edit2, ExternalLink, Save, Menu, LogOut, LayoutDashboard } from "lucide-react";
 
 type Product = Database["public"]["Tables"]["products"]["Row"];
 type AdminOrder = Database["public"]["Tables"]["admin_orders"]["Row"];
@@ -29,7 +29,8 @@ export default function VendorDashboardClient({ vendor }: { vendor: Vendor }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingStock, setEditingStock] = useState<{ id: string; value: string } | null>(null);
-
+  const [tab, setTab] = useState<"dashboard" | "products" | "orders">("dashboard");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const addToast = useCallback((message: string, type: "success" | "error") => {
     const id = ++toastId;
     setToasts((prev) => [...prev, { id, message, type }]);
@@ -127,20 +128,85 @@ export default function VendorDashboardClient({ vendor }: { vendor: Vendor }) {
   };
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">
-            Welcome, {vendor.business_name || vendor.name}
-          </h1>
-          {vendor.phone && (
-            <p className="text-sm text-muted-foreground mt-1">{vendor.phone}</p>
-          )}
-        </div>
-      </div>
+    <div className="flex h-screen bg-neutral-50 dark:bg-neutral-900 overflow-hidden text-foreground">
+      {/* Overlay for mobile sidebar */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Sidebar */}
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-neutral-950 text-white transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+        <div className="flex items-center justify-between h-16 px-6 border-b border-neutral-800">
+          <span className="text-xl font-bold tracking-tight text-white">
+            TRIVO <span className="text-accent">VENDOR</span>
+          </span>
+          <button onClick={() => setIsSidebarOpen(false)} className="md:hidden text-neutral-400 hover:text-white">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        
+        <div className="p-6 border-b border-neutral-800">
+          <p className="text-sm font-medium text-neutral-400 uppercase tracking-wider mb-1">Store Name</p>
+          <p className="text-base font-bold text-white truncate">{vendor.business_name || vendor.name}</p>
+        </div>
+
+        <nav className="p-4 space-y-1">
+          {[
+            { id: "dashboard" as const, label: "Dashboard", icon: LayoutDashboard },
+            { id: "products" as const, label: "Products", icon: Package },
+            { id: "orders" as const, label: "Orders", icon: ShoppingCart },
+          ].map((t) => (
+            <button
+              key={t.id}
+              onClick={() => { setTab(t.id); setIsSidebarOpen(false); }}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                tab === t.id 
+                  ? "bg-accent text-white shadow-lg shadow-accent/20" 
+                  : "text-neutral-400 hover:bg-neutral-800 hover:text-white"
+              }`}
+            >
+              <t.icon className="h-5 w-5" />
+              {t.label}
+            </button>
+          ))}
+        </nav>
+      </aside>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-background">
+        {/* Topbar */}
+        <header className="h-16 bg-card border-b border-default flex items-center justify-between px-4 md:px-8 shrink-0">
+          <div className="flex items-center gap-4">
+            <button onClick={() => setIsSidebarOpen(true)} className="md:hidden text-muted-foreground hover:text-foreground">
+              <Menu className="h-6 w-6" />
+            </button>
+            <h1 className="text-xl font-bold text-foreground capitalize hidden md:block">{tab}</h1>
+          </div>
+          <div className="flex items-center gap-4">
+            <form action="/auth/signout" method="post">
+              <input type="hidden" name="redirect" value="/vendor" />
+              <button
+                type="submit"
+                className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors bg-surface hover:bg-surface/80 px-4 py-2 rounded-lg"
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="hidden sm:inline">Log Out</span>
+              </button>
+            </form>
+          </div>
+        </header>
+
+        {/* Scrollable Content Area */}
+        <main className="flex-1 overflow-y-auto p-4 md:p-8">
+          <div className="max-w-7xl mx-auto space-y-8">
+            <h1 className="text-2xl font-bold text-foreground md:hidden capitalize">{tab}</h1>
+
+            {tab === "dashboard" && (
+              <div className="space-y-8">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="rounded-xl border border-default bg-card p-5 flex items-center gap-4">
           <div className="p-2.5 rounded-lg bg-surface text-muted">
             <Package className="h-5 w-5" />
@@ -179,8 +245,11 @@ export default function VendorDashboardClient({ vendor }: { vendor: Vendor }) {
         </div>
       </div>
 
-      {/* My Products */}
-      <section>
+              </div>
+            )}
+
+            {tab === "products" && (
+              <section>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold text-foreground">My Products</h2>
           <button
@@ -294,8 +363,11 @@ export default function VendorDashboardClient({ vendor }: { vendor: Vendor }) {
         </div>
       </section>
 
-      {/* My Orders */}
-      <section>
+              </section>
+            )}
+
+            {tab === "orders" && (
+              <section>
         <h2 className="text-lg font-bold text-foreground mb-4">My Orders</h2>
         <div className="overflow-x-auto rounded-xl border border-default bg-card">
           <table className="w-full text-left text-sm">
@@ -342,13 +414,17 @@ export default function VendorDashboardClient({ vendor }: { vendor: Vendor }) {
             </tbody>
           </table>
         </div>
-      </section>
+              </section>
+            )}
 
-      {loading && (
-        <div className="flex justify-center py-4">
-          <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-        </div>
-      )}
+            {loading && (
+              <div className="flex justify-center py-4">
+                <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+              </div>
+            )}
+          </div>
+        </main>
+      </div>
 
       {/* Toasts */}
       <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2">

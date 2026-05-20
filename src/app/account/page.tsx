@@ -2,7 +2,7 @@ import React from "react";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Package, User, Bell, LogOut, ShoppingBag, Clock, Heart, MapPin, Edit3, Star, type LucideIcon } from "lucide-react";
+import { Package, User, Bell, LogOut, ShoppingBag, Clock, Heart, MapPin, Edit3, Star, LayoutDashboard, type LucideIcon } from "lucide-react";
 import { format } from "date-fns";
 
 export default async function AccountPage() {
@@ -34,37 +34,55 @@ export default async function AccountPage() {
       : [];
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-background/80 backdrop-blur-md px-4 md:px-8 h-16 flex items-center justify-between">
-        <Link href="/" className="transition-opacity hover:opacity-90">
-          <img
-            src="/logo-transparent.svg"
-            alt="Trivo Kenya Logo"
-            className="h-10 w-auto"
-          />
-        </Link>
-        <div className="flex items-center gap-4">
-          <Link href="/" className="text-sm text-muted hover:text-foreground transition-colors">
-            Back to Store
+    <div className="flex h-screen bg-neutral-50 dark:bg-neutral-900 overflow-hidden text-foreground">
+      {/* Sidebar */}
+      <aside className="hidden md:flex flex-col w-64 bg-neutral-950 text-white shrink-0">
+        <div className="flex items-center justify-between h-16 px-6 border-b border-neutral-800">
+          <Link href="/" className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+            <User className="h-5 w-5 text-accent" /> Account
           </Link>
-          <form action="/auth/signout" method="post">
-            <button
-              type="submit"
-              className="text-sm font-medium text-muted hover:text-foreground flex items-center gap-2 transition-colors"
-            >
-              <LogOut className="h-4 w-4" />
-              Sign Out
-            </button>
-          </form>
         </div>
-      </header>
+        <div className="p-6 border-b border-neutral-800">
+          <p className="text-sm font-medium text-neutral-400 uppercase tracking-wider mb-1">Welcome back</p>
+          <p className="text-base font-bold text-white truncate">{customer?.full_name || user.email}</p>
+        </div>
+        <nav className="p-4 space-y-1 flex-1 overflow-y-auto">
+          <Link href="/account" className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium bg-accent text-white shadow-lg shadow-accent/20">
+            <LayoutDashboard className="h-5 w-5" /> Dashboard
+          </Link>
+          <Link href="/wishlist" className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-neutral-400 hover:bg-neutral-800 hover:text-white transition-colors">
+            <Heart className="h-5 w-5" /> Wishlist
+          </Link>
+          <Link href="/reviews" className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-neutral-400 hover:bg-neutral-800 hover:text-white transition-colors">
+            <Star className="h-5 w-5" /> Reviews
+          </Link>
+          <Link href="/how-to-order" className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-neutral-400 hover:bg-neutral-800 hover:text-white transition-colors">
+            <ShoppingBag className="h-5 w-5" /> Guide
+          </Link>
+        </nav>
+      </aside>
 
-      <main className="container mx-auto px-4 md:px-8 py-8">
-        <div className="max-w-5xl mx-auto">
-          <h1 className="text-2xl font-bold text-foreground mb-8 flex items-center gap-3">
-            <User className="h-6 w-6 text-accent" />
-            My Account
-          </h1>
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-background">
+        <header className="h-16 bg-card border-b border-default flex items-center justify-between px-4 md:px-8 shrink-0">
+          <div className="flex items-center gap-4">
+            <h1 className="text-xl font-bold text-foreground md:hidden">My Account</h1>
+          </div>
+          <div className="flex items-center gap-4">
+            <Link href="/" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors bg-surface hover:bg-surface/80 px-4 py-2 rounded-lg">
+               Store
+            </Link>
+            <form action="/auth/signout" method="post">
+              <button type="submit" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors bg-surface hover:bg-surface/80 px-4 py-2 rounded-lg">
+                <LogOut className="h-4 w-4" />
+                <span className="hidden sm:inline">Log Out</span>
+              </button>
+            </form>
+          </div>
+        </header>
+
+        <main className="flex-1 overflow-y-auto p-4 md:p-8">
+          <div className="max-w-5xl mx-auto space-y-8">
 
           {/* Stats Row */}
           <div className="grid gap-4 md:grid-cols-4 mb-8">
@@ -255,8 +273,9 @@ export default async function AccountPage() {
               </div>
             )}
           </div>
-        </div>
-      </main>
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

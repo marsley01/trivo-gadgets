@@ -72,9 +72,17 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Redirect /vendor to /vendor/dashboard if already logged in
+  // Redirect /vendor to /vendor/dashboard if already logged in AS A VENDOR
   if (request.nextUrl.pathname === "/vendor" && user) {
-    return NextResponse.redirect(new URL("/vendor/dashboard", request.url));
+    const { data: vendor } = await supabase
+      .from("vendors")
+      .select("id")
+      .eq("email", user.email)
+      .single();
+
+    if (vendor) {
+      return NextResponse.redirect(new URL("/vendor/dashboard", request.url));
+    }
   }
 
   // Protect /account routes - redirect to login if not authenticated

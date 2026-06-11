@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import Script from "next/script";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/context/CartContext";
@@ -82,20 +81,7 @@ export default function RootLayout({
               </CartProvider>
             </WishlistProvider>
           </ToastProvider>
-          {/* Tawk.to Script */}
-          <Script id="tawk-to" strategy="lazyOnload" dangerouslySetInnerHTML={{
-            __html: `
-              var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
-              (function(){
-              var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
-              s1.async=true;
-              s1.src='https://embed.tawk.to/6a0caec8a536181c39897da1/1jp0olged';
-              s1.charset='UTF-8';
-              s1.setAttribute('crossorigin','*');
-              s0.parentNode.insertBefore(s1,s0);
-              })();
-            `
-          }} />
+
           <PushNotificationPrompt />
         </ThemeProvider>
 

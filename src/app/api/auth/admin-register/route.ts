@@ -2,7 +2,8 @@ import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+export const dynamic = "force-dynamic";
+
 
 // Uses service role to bypass RLS — safe because this is server-side only
 const supabaseAdmin = createClient(
@@ -44,6 +45,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Send welcome email via Resend
+    const resend = new Resend(process.env.RESEND_API_KEY);
     try {
       await resend.emails.send({
         from: process.env.RESEND_FROM_EMAIL || "Trivo Kenya <receipts@trivokenya.store>",

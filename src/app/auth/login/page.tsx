@@ -58,10 +58,21 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password, options: { captchaToken } });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password, options: { captchaToken } });
 
-      if (error) {
-        setError(error.message);
+      if (error || !data.user) {
+        setError(error?.message || "Login failed");
+        setLoading(false);
+        return;
+      }
+
+      const user = data.user;
+      const tenantId = user?.user_metadata?.tenant_id;
+      
+      // Prevent cross-portal login: If they have a tenant_id, it must be 'customer'
+      if (tenantId && tenantId !== "customer") {
+        await supabase.auth.signOut();
+        setError(`This account belongs to a ${tenantId}. Please use the correct portal to log in.`);
         setLoading(false);
         return;
       }

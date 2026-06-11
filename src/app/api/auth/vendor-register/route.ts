@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
       email,
       password,
       email_confirm: true, // Auto-confirm so vendor can log in immediately
-      user_metadata: { full_name: fullName, phone, business_name: businessName, role: "vendor" },
+      user_metadata: { full_name: fullName, phone, business_name: businessName, role: "vendor", tenant_id: "vendor" },
     });
 
     if (authError) {

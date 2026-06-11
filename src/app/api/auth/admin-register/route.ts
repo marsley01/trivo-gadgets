@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
       email,
       password,
       email_confirm: true, // Auto-confirm so admin can log in immediately
-      user_metadata: { full_name: fullName, phone, role },
+      user_metadata: { full_name: fullName, phone, role, tenant_id: "admin" },
     });
 
     if (authError) {

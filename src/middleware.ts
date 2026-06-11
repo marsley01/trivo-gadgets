@@ -4,9 +4,12 @@ import { NextResponse, type NextRequest } from "next/server";
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
     request: {
-      headers: request.headers,
+      headers: new Headers(request.headers),
     },
   });
+
+  // Pass pathname to server components via custom header
+  response.headers.set("x-next-url", request.nextUrl.pathname);
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -21,6 +24,8 @@ export async function middleware(request: NextRequest) {
           response = NextResponse.next({
             request,
           });
+          // Re-set the pathname header on the new response
+          response.headers.set("x-next-url", request.nextUrl.pathname);
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options)
           );

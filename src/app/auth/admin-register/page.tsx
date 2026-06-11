@@ -95,7 +95,7 @@ export default function AdminRegisterPage() {
             We've sent a welcome email to your inbox. You can now sign in to access the admin dashboard.
           </p>
           <Link
-            href="/auth/login"
+            href="/admin/login"
             className="inline-block w-full bg-accent text-black font-semibold rounded-lg py-2.5 text-sm hover:bg-accent/90 transition-colors"
           >
             Go to Sign In
@@ -244,7 +244,7 @@ export default function AdminRegisterPage() {
 
           <p className="text-center text-sm text-muted-foreground mt-6">
             Already have an admin account?{" "}
-            <Link href="/auth/login" className="text-accent hover:underline font-medium">
+            <Link href="/admin/login" className="text-accent hover:underline font-medium">
               Sign in
             </Link>
           </p>

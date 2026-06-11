@@ -54,10 +54,21 @@ export default function VendorLogin() {
     setLoading(true);
 
     const supabase = createClient();
-    const { error: authError } = await supabase.auth.signInWithPassword({ email, password, options: { captchaToken } });
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ email, password, options: { captchaToken } });
 
-    if (authError) {
+    if (authError || !authData?.user) {
       setError("Wrong email or password");
+      setLoading(false);
+      return;
+    }
+
+    const user = authData.user;
+    const tenantId = user?.user_metadata?.tenant_id;
+    
+    // Prevent cross-portal login: If they have a tenant_id, it must be 'vendor'
+    if (tenantId && tenantId !== "vendor") {
+      await supabase.auth.signOut();
+      setError(`This account belongs to a ${tenantId}. Please use the correct portal to log in.`);
       setLoading(false);
       return;
     }

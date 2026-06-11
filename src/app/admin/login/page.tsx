@@ -67,6 +67,17 @@ export default function AdminLogin() {
       return;
     }
 
+    const user = authData.user;
+    const tenantId = user?.user_metadata?.tenant_id;
+    
+    // Prevent cross-portal login: If they have a tenant_id, it must be 'admin'
+    if (tenantId && tenantId !== "admin") {
+      await supabase.auth.signOut();
+      setError(`This account belongs to a ${tenantId}. Please use the correct portal to log in.`);
+      setLoading(false);
+      return;
+    }
+
     const { data: adminUser } = await supabase
       .from("admin_users")
       .select("id, role")

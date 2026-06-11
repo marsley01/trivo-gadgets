@@ -95,7 +95,7 @@ export default function VendorRegisterPage() {
             We've sent a welcome email to your inbox. You can now sign in to access your vendor dashboard.
           </p>
           <Link
-            href="/auth/login"
+            href="/vendor"
             className="inline-block w-full bg-accent text-black font-semibold rounded-lg py-2.5 text-sm hover:bg-accent/90 transition-colors"
           >
             Go to Sign In
@@ -230,7 +230,7 @@ export default function VendorRegisterPage() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !captchaToken}
               className="w-full bg-accent text-black font-semibold rounded-lg py-2.5 text-sm flex items-center justify-center gap-2 hover:bg-accent/90 transition-all active:scale-[0.98] disabled:opacity-50"
             >
               {loading ? (
@@ -244,7 +244,7 @@ export default function VendorRegisterPage() {
 
           <p className="text-center text-sm text-muted-foreground mt-6">
             Already have a vendor account?{" "}
-            <Link href="/auth/login" className="text-accent hover:underline font-medium">
+            <Link href="/vendor" className="text-accent hover:underline font-medium">
               Sign in
             </Link>
           </p>

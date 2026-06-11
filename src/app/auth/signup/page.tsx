@@ -65,7 +65,7 @@ export default function SignupPage() {
         email,
         password,
         options: {
-          data: { full_name: fullName, phone },
+          data: { full_name: fullName, phone, tenant_id: "customer" },
           captchaToken,
         },
       });

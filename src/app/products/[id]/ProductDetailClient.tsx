@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import { Database } from "@/types/database.types";
-import { Shield, CheckCircle, Truck, Heart, ShoppingCart, MessageCircle, Star } from "lucide-react";
+import { Shield, CheckCircle, Truck, Heart, ShoppingCart, MessageCircle, Star, Check, Tag, Ruler } from "lucide-react";
 import { generateWhatsAppLink } from "@/lib/config";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
@@ -15,6 +15,9 @@ import ShareButton from "@/components/ShareButton";
 import ReviewsSection from "@/components/reviews/ReviewsSection";
 
 type Product = Database["public"]["Tables"]["products"]["Row"];
+
+type VariantType = { type: string; values: string[] };
+type VariantOption = { sku: string; options: Record<string, string>; price: number; stock: number; image: string };
 
 export default function ProductDetailClient({
   product,
@@ -28,11 +31,49 @@ export default function ProductDetailClient({
   const { hasItem, toggleItem } = useWishlist();
   const wished = hasItem(product.id);
 
+  const variants = useMemo(() => (product.variants as VariantType[]) || [], [product.variants]);
+  const variantOptions = useMemo(() => (product.variant_options as VariantOption[]) || [], [product.variant_options]);
+  const hasVariants = variants.length > 0 && variantOptions.length > 0;
+
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
+  const [selectedImage, setSelectedImage] = useState(0);
+
+  const activeVariant = useMemo(() => {
+    if (!hasVariants) return null;
+    return variantOptions.find((vo) =>
+      Object.entries(selectedOptions).every(([key, val]) => vo.options[key] === val)
+    ) || null;
+  }, [selectedOptions, variantOptions, hasVariants]);
+
+  // Initialize selected options with first values
+  useEffect(() => {
+    if (hasVariants && Object.keys(selectedOptions).length === 0) {
+      const initial: Record<string, string> = {};
+      variants.forEach((v) => { if (v.values.length > 0) initial[v.type] = v.values[0]; });
+      setSelectedOptions(initial);
+    }
+  }, [hasVariants, variants, selectedOptions]);
+
+  const displayPrice = activeVariant ? activeVariant.price : product.price;
+  const displayStock = activeVariant ? activeVariant.stock : product.stock;
+
   // Gallery: split image_url into multiple images (comma-separated) or use single
   const images = product.image_url
     ? product.image_url.split(",").map((u) => u.trim())
     : ["https://images.unsplash.com/photo-1590658268037-6bf12165a8df?q=80&w=1200&auto=format&fit=crop"];
-  const [selectedImage, setSelectedImage] = useState(0);
+
+  const features = useMemo(() => (product.features as string[]) || [], [product.features]);
+  const specifications = useMemo(() => (product.specifications as Record<string, string>) || {}, [product.specifications]);
+  const tags = useMemo(() => (product.tags as string[]) || [], [product.tags]);
+
+  const handleAddToCart = () => {
+    if (hasVariants && activeVariant) {
+      const variantLabel = Object.values(activeVariant.options).join(" / ");
+      addToCart({ ...product, name: `${product.name} (${variantLabel})`, price: activeVariant.price, stock: activeVariant.stock });
+    } else {
+      addToCart(product);
+    }
+  };
 
   return (
     <>
@@ -61,7 +102,7 @@ export default function ProductDetailClient({
                   sizes="(max-width: 768px) 100vw, 50vw"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-                {product.stock < 1 && (
+                {displayStock < 1 && (
                   <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
                     <span className="text-2xl font-bold text-white">Out of Stock</span>
                   </div>
@@ -102,25 +143,62 @@ export default function ProductDetailClient({
                 {product.description}
               </p>
 
+              {/* Variant Selectors */}
+              {hasVariants && (
+                <div className="space-y-3 pt-2">
+                  {variants.map((variant) => (
+                    <div key={variant.type}>
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">
+                        {variant.type}
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {variant.values.map((val) => {
+                          const isSelected = selectedOptions[variant.type] === val;
+                          const isAvailable = variantOptions.some(
+                            (vo) => vo.options[variant.type] === val && vo.stock > 0
+                          );
+                          return (
+                            <button
+                              key={val}
+                              onClick={() => setSelectedOptions((prev) => ({ ...prev, [variant.type]: val }))}
+                              disabled={!isAvailable}
+                              className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
+                                isSelected
+                                  ? "border-accent bg-accent/20 text-accent font-bold"
+                                  : isAvailable
+                                  ? "border-default text-foreground hover:border-accent/50 hover:bg-surface"
+                                  : "border-default/30 text-muted-foreground/50 cursor-not-allowed line-through"
+                              }`}
+                            >
+                              {val}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="flex items-baseline gap-4">
                 <span className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground">
-                  KES {product.price.toLocaleString()}
+                  KES {displayPrice.toLocaleString()}
                 </span>
                 <span className="text-lg text-muted-foreground line-through">
-                  KES {Math.round(product.price * 1.15).toLocaleString()}
+                  KES {Math.round(displayPrice * 1.15).toLocaleString()}
                 </span>
-                {product.stock > 0 && product.stock < 5 && (
+                {displayStock > 0 && displayStock < 5 && (
                   <span className="text-sm text-amber-500 font-medium">
-                    Only {product.stock} left
+                    Only {displayStock} left
                   </span>
                 )}
               </div>
 
               {/* Action Buttons */}
-              {product.stock > 0 && (
+              {displayStock > 0 && (
                 <div className="flex flex-col sm:flex-row gap-3 pt-2">
                   <button
-                    onClick={() => addToCart(product)}
+                    onClick={handleAddToCart}
                     className="flex-1 inline-flex items-center justify-center gap-2 rounded-full bg-accent text-black px-8 py-4 text-sm font-bold transition-all hover:scale-105 active:scale-95"
                   >
                     <ShoppingCart className="h-5 w-5" />
@@ -153,9 +231,12 @@ export default function ProductDetailClient({
               <div className="grid grid-cols-2 gap-3 pt-2">
                 {[
                   { label: "Condition", value: "Brand New" },
-                  { label: "Warranty", value: "7-Day Replacement" },
-                  { label: "Stock", value: product.stock > 0 ? `${product.stock} units` : "Out of stock" },
-                  { label: "Delivery", value: product.stock > 0 ? "1-2 days (Nairobi)" : "—" },
+                  ...(product.brand ? [{ label: "Brand", value: product.brand }] : []),
+                  ...(product.material ? [{ label: "Material", value: product.material }] : []),
+                  ...(product.weight ? [{ label: "Weight", value: product.weight }] : []),
+                  ...(product.dimensions ? [{ label: "Dimensions", value: product.dimensions }] : []),
+                  { label: "Stock", value: displayStock > 0 ? `${displayStock} units` : "Out of stock" },
+                  { label: "Delivery", value: displayStock > 0 ? "1-2 days (Nairobi)" : "—" },
                 ].map((spec) => (
                   <div key={spec.label} className="rounded-xl bg-surface/30 border border-subtle/20 px-4 py-3">
                     <p className="text-[11px] text-muted-foreground uppercase tracking-wider">{spec.label}</p>
@@ -196,6 +277,60 @@ export default function ProductDetailClient({
               </div>
             </div>
           </div>
+
+          {/* Features Section */}
+          {features.length > 0 && (
+            <section className="mt-16">
+              <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-accent" />
+                Key Features
+              </h2>
+              <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {features.map((feat, i) => (
+                  <li key={i} className="flex items-start gap-3 rounded-xl bg-surface/30 border border-subtle/20 px-4 py-3">
+                    <Check className="h-4 w-4 text-accent mt-0.5 shrink-0" />
+                    <span className="text-sm text-foreground">{feat}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {/* Specifications Section */}
+          {Object.keys(specifications).length > 0 && (
+            <section className="mt-16">
+              <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+                <Ruler className="h-5 w-5 text-accent" />
+                Specifications
+              </h2>
+              <div className="rounded-xl border border-subtle overflow-hidden">
+                <table className="w-full text-sm">
+                  <tbody>
+                    {Object.entries(specifications).map(([key, val], i) => (
+                      <tr key={key} className={i % 2 === 0 ? "bg-surface/20" : "bg-transparent"}>
+                        <td className="px-4 py-3 font-medium text-muted-foreground w-1/3 border-r border-subtle/50">{key}</td>
+                        <td className="px-4 py-3 text-foreground">{val}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
+
+          {/* Tags Section */}
+          {tags.length > 0 && (
+            <section className="mt-10">
+              <div className="flex flex-wrap items-center gap-2">
+                <Tag className="h-4 w-4 text-muted-foreground" />
+                {tags.map((tag, i) => (
+                  <span key={i} className="rounded-full bg-surface border border-default px-3 py-1 text-xs font-medium text-muted-foreground">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Customer Reviews Section */}
           <ReviewsSection productId={product.id} productName={product.name} />

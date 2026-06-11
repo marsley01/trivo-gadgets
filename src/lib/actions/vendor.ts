@@ -87,6 +87,15 @@ export async function createVendorProduct(formData: FormData, vendorId: string) 
   const image_url = formData.get("image_url") as string;
   const image_file = formData.get("image_file") as File | null;
   const is_featured = formData.get("is_featured") === "true";
+  const brand = formData.get("brand") as string;
+  const material = formData.get("material") as string;
+  const weight = formData.get("weight") as string;
+  const dimensions = formData.get("dimensions") as string;
+  const features = formData.get("features") as string;
+  const specifications = formData.get("specifications") as string;
+  const tags = formData.get("tags") as string;
+  const variants = formData.get("variants") as string;
+  const variant_options = formData.get("variant_options") as string;
 
   let final_image_url = image_url;
 
@@ -107,6 +116,18 @@ export async function createVendorProduct(formData: FormData, vendorId: string) 
     final_image_url = publicUrl;
   }
 
+  let parsedFeatures: string[] = [];
+  let parsedSpecifications: Record<string, string> = {};
+  let parsedTags: string[] = [];
+  let parsedVariants: { type: string; values: string[] }[] = [];
+  let parsedVariantOptions: { sku: string; options: Record<string, string>; price: number; stock: number; image: string }[] = [];
+
+  try { if (features) parsedFeatures = JSON.parse(features); } catch {}
+  try { if (specifications) parsedSpecifications = JSON.parse(specifications); } catch {}
+  try { if (tags) parsedTags = JSON.parse(tags); } catch {}
+  try { if (variants) parsedVariants = JSON.parse(variants); } catch {}
+  try { if (variant_options) parsedVariantOptions = JSON.parse(variant_options); } catch {}
+
   const { error } = await adminClient.from("products").insert({
     name,
     description: description || null,
@@ -116,6 +137,15 @@ export async function createVendorProduct(formData: FormData, vendorId: string) 
     image_url: final_image_url || null,
     is_featured,
     vendor_id: vendorId,
+    brand: brand || null,
+    material: material || null,
+    weight: weight || null,
+    dimensions: dimensions || null,
+    features: parsedFeatures,
+    specifications: parsedSpecifications,
+    tags: parsedTags,
+    variants: parsedVariants,
+    variant_options: parsedVariantOptions,
   });
 
   if (error) throw new Error(error.message);

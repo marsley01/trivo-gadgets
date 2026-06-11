@@ -73,10 +73,10 @@ export default function ProductCard({ product }: { product: Product }) {
           </h3>
         </Link>
         
-        {/* Guarantee Badge */}
+        {/* Brand */}
         <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mb-4">
           <CheckCircle2 className="h-3.5 w-3.5 text-accent shrink-0" />
-          <span>Genuine • Warrantied</span>
+          <span>{product.brand || "Genuine"}</span>
         </div>
 
         {/* Bottom Row: Price + Actions */}

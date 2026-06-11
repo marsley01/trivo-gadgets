@@ -80,6 +80,15 @@ export default function WishlistPage() {
                             focus_keyword: null,
                             cj_product_id: null,
                             vendor_id: null,
+                            brand: null,
+                            features: [],
+                            specifications: {},
+                            tags: [],
+                            material: null,
+                            weight: null,
+                            dimensions: null,
+                            variants: [],
+                            variant_options: [],
                             created_at: new Date().toISOString(),
                           });
                           removeItem(item.id);

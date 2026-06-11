@@ -287,6 +287,20 @@ ALTER TABLE public.products ADD COLUMN IF NOT EXISTS focus_keyword TEXT;
 -- CJ Dropshipping integration
 ALTER TABLE public.products ADD COLUMN IF NOT EXISTS cj_product_id TEXT;
 
+-- Enhanced product content columns
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS brand TEXT;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS features JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS specifications JSONB DEFAULT '{}'::jsonb;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS tags JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS material TEXT;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS weight TEXT;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS dimensions TEXT;
+
+-- Product variants (like WooCommerce attributes)
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS variants JSONB DEFAULT '[]'::jsonb;
+-- variant_options stores SKU-level pricing/stock for each combination
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS variant_options JSONB DEFAULT '[]'::jsonb;
+
 -- Enable RLS on admin_users
 ALTER TABLE public.admin_users ENABLE ROW LEVEL SECURITY;
 

@@ -28,6 +28,15 @@ export async function createProduct(formData: FormData) {
   const seo_description = formData.get("seo_description") as string;
   const focus_keyword = formData.get("focus_keyword") as string;
   const cj_product_id = formData.get("cj_product_id") as string;
+  const brand = formData.get("brand") as string;
+  const material = formData.get("material") as string;
+  const weight = formData.get("weight") as string;
+  const dimensions = formData.get("dimensions") as string;
+  const features = formData.get("features") as string;
+  const specifications = formData.get("specifications") as string;
+  const tags = formData.get("tags") as string;
+  const variants = formData.get("variants") as string;
+  const variant_options = formData.get("variant_options") as string;
 
   if (is_featured) {
     await supabase.from("products").update({ is_featured: false });
@@ -52,6 +61,18 @@ export async function createProduct(formData: FormData) {
     final_image_url = publicUrl;
   }
 
+  let parsedFeatures: string[] = [];
+  let parsedSpecifications: Record<string, string> = {};
+  let parsedTags: string[] = [];
+  let parsedVariants: { type: string; values: string[] }[] = [];
+  let parsedVariantOptions: { sku: string; options: Record<string, string>; price: number; stock: number; image: string }[] = [];
+
+  try { if (features) parsedFeatures = JSON.parse(features); } catch {}
+  try { if (specifications) parsedSpecifications = JSON.parse(specifications); } catch {}
+  try { if (tags) parsedTags = JSON.parse(tags); } catch {}
+  try { if (variants) parsedVariants = JSON.parse(variants); } catch {}
+  try { if (variant_options) parsedVariantOptions = JSON.parse(variant_options); } catch {}
+
   const { error } = await supabase.from("products").insert({
     name,
     description: description || null,
@@ -64,6 +85,15 @@ export async function createProduct(formData: FormData) {
     seo_description: seo_description || null,
     focus_keyword: focus_keyword || null,
     cj_product_id: cj_product_id || null,
+    brand: brand || null,
+    material: material || null,
+    weight: weight || null,
+    dimensions: dimensions || null,
+    features: parsedFeatures,
+    specifications: parsedSpecifications,
+    tags: parsedTags,
+    variants: parsedVariants,
+    variant_options: parsedVariantOptions,
   });
 
   if (error) throw new Error(error.message);
@@ -83,6 +113,15 @@ export async function updateProduct(id: string, formData: FormData) {
   const seo_title = formData.get("seo_title") as string;
   const seo_description = formData.get("seo_description") as string;
   const focus_keyword = formData.get("focus_keyword") as string;
+  const brand = formData.get("brand") as string;
+  const material = formData.get("material") as string;
+  const weight = formData.get("weight") as string;
+  const dimensions = formData.get("dimensions") as string;
+  const features = formData.get("features") as string;
+  const specifications = formData.get("specifications") as string;
+  const tags = formData.get("tags") as string;
+  const variants = formData.get("variants") as string;
+  const variant_options = formData.get("variant_options") as string;
 
   if (is_featured) {
     await supabase.from("products").update({ is_featured: false }).neq("id", id);
@@ -107,6 +146,18 @@ export async function updateProduct(id: string, formData: FormData) {
     final_image_url = publicUrl;
   }
 
+  let parsedFeatures: string[] = [];
+  let parsedSpecifications: Record<string, string> = {};
+  let parsedTags: string[] = [];
+  let parsedVariants: { type: string; values: string[] }[] = [];
+  let parsedVariantOptions: { sku: string; options: Record<string, string>; price: number; stock: number; image: string }[] = [];
+
+  try { if (features) parsedFeatures = JSON.parse(features); } catch {}
+  try { if (specifications) parsedSpecifications = JSON.parse(specifications); } catch {}
+  try { if (tags) parsedTags = JSON.parse(tags); } catch {}
+  try { if (variants) parsedVariants = JSON.parse(variants); } catch {}
+  try { if (variant_options) parsedVariantOptions = JSON.parse(variant_options); } catch {}
+
   const { error } = await supabase
     .from("products")
     .update({
@@ -120,6 +171,15 @@ export async function updateProduct(id: string, formData: FormData) {
       seo_title: seo_title || null,
       seo_description: seo_description || null,
       focus_keyword: focus_keyword || null,
+      brand: brand || null,
+      material: material || null,
+      weight: weight || null,
+      dimensions: dimensions || null,
+      features: parsedFeatures,
+      specifications: parsedSpecifications,
+      tags: parsedTags,
+      variants: parsedVariants,
+      variant_options: parsedVariantOptions,
     })
     .eq("id", id);
 

@@ -26,6 +26,15 @@ const emptyForm = {
   seo_title: "",
   seo_description: "",
   focus_keyword: "",
+  brand: "",
+  material: "",
+  weight: "",
+  dimensions: "",
+  features: "",
+  specifications: "",
+  tags: "",
+  variants: "",
+  variant_options: "",
   image_file: null as File | null,
 };
 
@@ -173,6 +182,15 @@ export default function AdminDashboardClient({
       seo_title: product.seo_title || "",
       seo_description: product.seo_description || "",
       focus_keyword: product.focus_keyword || "",
+      brand: product.brand || "",
+      material: product.material || "",
+      weight: product.weight || "",
+      dimensions: product.dimensions || "",
+      features: JSON.stringify(product.features || []),
+      specifications: JSON.stringify(product.specifications || {}),
+      tags: JSON.stringify(product.tags || []),
+      variants: JSON.stringify(product.variants || []),
+      variant_options: JSON.stringify(product.variant_options || []),
       image_file: null,
     });
     setEditingId(product.id);
@@ -198,6 +216,15 @@ export default function AdminDashboardClient({
       fd.set("seo_title", form.seo_title);
       fd.set("seo_description", form.seo_description);
       fd.set("focus_keyword", form.focus_keyword);
+      fd.set("brand", form.brand);
+      fd.set("material", form.material);
+      fd.set("weight", form.weight);
+      fd.set("dimensions", form.dimensions);
+      fd.set("features", form.features);
+      fd.set("specifications", form.specifications);
+      fd.set("tags", form.tags);
+      fd.set("variants", form.variants);
+      fd.set("variant_options", form.variant_options);
 
       if (editingId) {
         await updateProduct(editingId, fd);
@@ -549,6 +576,45 @@ export default function AdminDashboardClient({
                 <div>
                   <input type="text" placeholder="Focus Keyword" value={form.focus_keyword} onChange={(e) => setForm((f) => ({ ...f, focus_keyword: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent" />
                 </div>
+              </div>
+            </div>
+
+            <div className="border-t border-default pt-4 mt-2">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Enhanced Product Info</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <input type="text" placeholder="Brand (e.g. Samsung)" value={form.brand} onChange={(e) => setForm((f) => ({ ...f, brand: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent" />
+                <input type="text" placeholder="Material (e.g. Aluminum)" value={form.material} onChange={(e) => setForm((f) => ({ ...f, material: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent" />
+                <input type="text" placeholder="Weight (e.g. 200g)" value={form.weight} onChange={(e) => setForm((f) => ({ ...f, weight: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent" />
+                <input type="text" placeholder="Dimensions (e.g. 10x5x3cm)" value={form.dimensions} onChange={(e) => setForm((f) => ({ ...f, dimensions: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent" />
+              </div>
+              <div className="grid grid-cols-1 gap-4 mt-3">
+                <div>
+                  <label className="text-[11px] text-muted-foreground block mb-1">Features (JSON array, e.g. ["Feature 1", "Feature 2"])</label>
+                  <textarea placeholder='["Noise Cancelling", "24hr Battery", "Water Resistant"]' rows={2} value={form.features} onChange={(e) => setForm((f) => ({ ...f, features: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent resize-none font-mono text-xs" />
+                </div>
+                <div>
+                  <label className="text-[11px] text-muted-foreground block mb-1">Specifications (JSON object, e.g. {"{"}"Weight":"200g","Color":"Black"{"}"})</label>
+                  <textarea placeholder='{"Weight": "200g", "Color": "Black", "Connectivity": "Bluetooth 5.3"}' rows={2} value={form.specifications} onChange={(e) => setForm((f) => ({ ...f, specifications: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent resize-none font-mono text-xs" />
+                </div>
+                <div>
+                  <label className="text-[11px] text-muted-foreground block mb-1">Tags (JSON array, e.g. ["wireless", "bluetooth", "earphones"])</label>
+                  <textarea placeholder='["wireless", "bluetooth", "earphones", "new-arrival"]' rows={1} value={form.tags} onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent resize-none font-mono text-xs" />
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-default pt-4 mt-2">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Product Variants (Like WooCommerce)</h3>
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="text-[11px] text-muted-foreground block mb-1">Variant Types (JSON array, e.g. [{"{"}"type":"Color","values":["Red","Blue","Black"]{"}"}])</label>
+                  <textarea placeholder='[{"type": "Color", "values": ["Red", "Blue", "Black"]}, {"type": "Size", "values": ["S", "M", "L", "XL"]}]' rows={2} value={form.variants} onChange={(e) => setForm((f) => ({ ...f, variants: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent resize-none font-mono text-xs" />
+                </div>
+                <div>
+                  <label className="text-[11px] text-muted-foreground block mb-1">Variant Options (JSON array with SKU, options, price, stock, image)</label>
+                  <textarea placeholder='[{"sku": "PROD-RED-M", "options": {"Color": "Red", "Size": "M"}, "price": 3500, "stock": 5, "image": ""}, {"sku": "PROD-BLUE-L", "options": {"Color": "Blue", "Size": "L"}, "price": 3500, "stock": 3, "image": ""}]' rows={3} value={form.variant_options} onChange={(e) => setForm((f) => ({ ...f, variant_options: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent resize-none font-mono text-xs" />
+                </div>
+                <p className="text-[11px] text-muted-foreground">Leave empty for simple products. When variant options exist, customers choose from available options.</p>
               </div>
             </div>
             <div className="flex justify-end gap-3 pt-2">

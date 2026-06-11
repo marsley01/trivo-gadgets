@@ -24,6 +24,15 @@ export type Database = {
           focus_keyword: string | null
           vendor_id: string | null
           cj_product_id: string | null
+          brand: string | null
+          features: Json
+          specifications: Json
+          tags: Json
+          material: string | null
+          weight: string | null
+          dimensions: string | null
+          variants: Json
+          variant_options: Json
           created_at: string
         }
         Insert: {
@@ -40,6 +49,15 @@ export type Database = {
           focus_keyword?: string | null
           vendor_id?: string | null
           cj_product_id?: string | null
+          brand?: string | null
+          features?: Json
+          specifications?: Json
+          tags?: Json
+          material?: string | null
+          weight?: string | null
+          dimensions?: string | null
+          variants?: Json
+          variant_options?: Json
           created_at?: string
         }
         Update: {
@@ -56,6 +74,15 @@ export type Database = {
           focus_keyword?: string | null
           vendor_id?: string | null
           cj_product_id?: string | null
+          brand?: string | null
+          features?: Json
+          specifications?: Json
+          tags?: Json
+          material?: string | null
+          weight?: string | null
+          dimensions?: string | null
+          variants?: Json
+          variant_options?: Json
           created_at?: string
         }
         Relationships: [

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { resend } from "@/lib/resend";
+import { getResendClient } from "@/lib/resend";
 
 async function verifyToken(token: string, ip: string): Promise<[boolean, string[]]> {
   const payload: Record<string, string> = {
@@ -61,6 +61,7 @@ export async function POST(req: Request) {
 
     // Send Welcome Email
     if (process.env.RESEND_API_KEY) {
+      const resend = getResendClient();
       await resend.emails.send({
         from: "Trivo Kenya <info@trivokenya.store>", // Ensure this domain is verified in Resend
         to: email,

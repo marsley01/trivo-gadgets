@@ -1,7 +1,6 @@
 import { Resend } from "resend";
 import { WHATSAPP_NUMBER } from "@/lib/config";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 type OrderItem = {
   product_name: string;
@@ -20,6 +19,7 @@ export async function sendReceiptEmail(params: {
   mpesaReference: string;
 }) {
   const { to, receiptNumber, customerName, items, subtotal, deliveryFee, total, mpesaReference } = params;
+  const resend = new Resend(process.env.RESEND_API_KEY);
 
   const itemsHtml = items
     .map(

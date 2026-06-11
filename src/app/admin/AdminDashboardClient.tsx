@@ -22,6 +22,7 @@ const emptyForm = {
   stock: "0",
   category: "",
   image_url: "",
+  is_featured: false,
   seo_title: "",
   seo_description: "",
   focus_keyword: "",

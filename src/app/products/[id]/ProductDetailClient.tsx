@@ -98,7 +98,7 @@ export default function ProductDetailClient({
                   src={images[selectedImage]}
                   alt={product.name}
                   fill
-                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  className="object-contain mix-blend-multiply dark:mix-blend-normal transition-transform duration-500 group-hover:scale-105 p-6 md:p-12"
                   priority
                   sizes="(max-width: 768px) 100vw, 50vw"
                 />
@@ -119,7 +119,7 @@ export default function ProductDetailClient({
                         i === selectedImage ? "border-accent ring-1 ring-accent/30" : "border-subtle/30 hover:border-default"
                       }`}
                     >
-                      <Image src={img} alt={`${product.name} view ${i + 1}`} fill className="object-cover" sizes="80px" />
+                      <Image src={img} alt={`${product.name} view ${i + 1}`} fill className="object-contain mix-blend-multiply dark:mix-blend-normal p-2" sizes="80px" />
                     </button>
                   ))}
                 </div>

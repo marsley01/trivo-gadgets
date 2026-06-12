@@ -110,6 +110,15 @@ export default function AdminDashboardClient({
   const [newVariantValue, setNewVariantValue] = useState<Record<number, string>>({});
   const [showVariants, setShowVariants] = useState(false);
 
+  // Visual state for arrays and objects
+  const [visFeatures, setVisFeatures] = useState<string[]>([]);
+  const [newFeature, setNewFeature] = useState("");
+  const [visSpecs, setVisSpecs] = useState<{key: string; value: string}[]>([]);
+  const [newSpecKey, setNewSpecKey] = useState("");
+  const [newSpecValue, setNewSpecValue] = useState("");
+  const [visTags, setVisTags] = useState<string[]>([]);
+  const [newTag, setNewTag] = useState("");
+
   interface CJProduct {
     pid: string;
     productName: string;
@@ -181,6 +190,13 @@ export default function AdminDashboardClient({
     setShowVariants(false);
     setNewVariantType("");
     setNewVariantValue({});
+    setVisFeatures([]);
+    setVisSpecs([]);
+    setVisTags([]);
+    setNewFeature("");
+    setNewSpecKey("");
+    setNewSpecValue("");
+    setNewTag("");
     setShowForm(false);
     setEditingId(null);
   };
@@ -213,6 +229,18 @@ export default function AdminDashboardClient({
     setVisVariants(parsedVariants);
     setVisOptions(parsedOptions);
     setShowVariants(parsedVariants.length > 0);
+    
+    // Parse visual states
+    let pFeatures: string[] = [];
+    let pSpecs: Record<string, string> = {};
+    let pTags: string[] = [];
+    try { pFeatures = product.features as string[] || []; } catch {}
+    try { pSpecs = product.specifications as Record<string, string> || {}; } catch {}
+    try { pTags = product.tags as string[] || []; } catch {}
+    setVisFeatures(pFeatures);
+    setVisSpecs(Object.entries(pSpecs).map(([key, value]) => ({ key, value })));
+    setVisTags(pTags);
+
     setEditingId(product.id);
     setShowForm(true);
     setTab("products");
@@ -220,8 +248,18 @@ export default function AdminDashboardClient({
 
   // Sync visual variant state to JSON form fields
   useEffect(() => {
-    setForm((f) => ({ ...f, variants: JSON.stringify(visVariants), variant_options: JSON.stringify(visOptions) }));
-  }, [visVariants, visOptions]);
+    setForm((f) => ({ 
+      ...f, 
+      variants: JSON.stringify(visVariants), 
+      variant_options: JSON.stringify(visOptions),
+      features: JSON.stringify(visFeatures),
+      tags: JSON.stringify(visTags),
+      specifications: JSON.stringify(visSpecs.reduce((acc, curr) => {
+        if (curr.key.trim()) acc[curr.key.trim()] = curr.value.trim();
+        return acc;
+      }, {} as Record<string, string>))
+    }));
+  }, [visVariants, visOptions, visFeatures, visSpecs, visTags]);
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -615,18 +653,117 @@ export default function AdminDashboardClient({
                 <input type="text" placeholder="Weight (e.g. 200g)" value={form.weight} onChange={(e) => setForm((f) => ({ ...f, weight: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent" />
                 <input type="text" placeholder="Dimensions (e.g. 10x5x3cm)" value={form.dimensions} onChange={(e) => setForm((f) => ({ ...f, dimensions: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent" />
               </div>
-              <div className="grid grid-cols-1 gap-4 mt-3">
+              <div className="grid grid-cols-1 gap-6 mt-6">
+                {/* Visual Features */}
                 <div>
-                  <label className="text-[11px] text-muted-foreground block mb-1">Features (JSON array, e.g. ["Feature 1", "Feature 2"])</label>
-                  <textarea placeholder='["Noise Cancelling", "24hr Battery", "Water Resistant"]' rows={2} value={form.features} onChange={(e) => setForm((f) => ({ ...f, features: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent resize-none font-mono text-xs" />
+                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2 block">Key Features</label>
+                  <div className="space-y-2">
+                    {visFeatures.map((f, i) => (
+                      <div key={i} className="flex items-center gap-2 rounded-lg border border-default bg-surface/50 px-3 py-2">
+                        <span className="text-sm text-foreground flex-1">{f}</span>
+                        <button type="button" onClick={() => setVisFeatures(prev => prev.filter((_, idx) => idx !== i))} className="text-muted hover:text-red-400">
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                    <div className="flex items-center gap-2">
+                      <input type="text" placeholder="Add a feature (e.g. Noise Cancelling)" value={newFeature} onChange={(e) => setNewFeature(e.target.value)} onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          if (newFeature.trim() && !visFeatures.includes(newFeature.trim())) {
+                            setVisFeatures([...visFeatures, newFeature.trim()]);
+                            setNewFeature("");
+                          }
+                        }
+                      }} className="flex-1 bg-background border border-default rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-accent" />
+                      <button type="button" onClick={() => {
+                        if (newFeature.trim() && !visFeatures.includes(newFeature.trim())) {
+                          setVisFeatures([...visFeatures, newFeature.trim()]);
+                          setNewFeature("");
+                        }
+                      }} className="rounded-lg bg-surface border border-default px-3 py-2 text-foreground hover:bg-surface/80 transition-colors">
+                        <Plus className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
+
+                {/* Visual Specifications */}
                 <div>
-                  <label className="text-[11px] text-muted-foreground block mb-1">Specifications (JSON object, e.g. {"{"}"Weight":"200g","Color":"Black"{"}"})</label>
-                  <textarea placeholder='{"Weight": "200g", "Color": "Black", "Connectivity": "Bluetooth 5.3"}' rows={2} value={form.specifications} onChange={(e) => setForm((f) => ({ ...f, specifications: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent resize-none font-mono text-xs" />
+                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2 block">Specifications</label>
+                  <div className="space-y-2">
+                    {visSpecs.map((s, i) => (
+                      <div key={i} className="flex items-center gap-2 rounded-lg border border-default bg-surface/50 px-3 py-2">
+                        <span className="text-sm font-medium text-foreground w-1/3 truncate">{s.key}</span>
+                        <span className="text-sm text-muted-foreground flex-1 border-l border-default pl-3 truncate">{s.value}</span>
+                        <button type="button" onClick={() => setVisSpecs(prev => prev.filter((_, idx) => idx !== i))} className="text-muted hover:text-red-400 pl-1">
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                    <div className="flex items-center gap-2">
+                      <input type="text" placeholder="Spec name (e.g. Battery)" value={newSpecKey} onChange={(e) => setNewSpecKey(e.target.value)} className="w-1/3 bg-background border border-default rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-accent" />
+                      <input type="text" placeholder="Value (e.g. 24 hours)" value={newSpecValue} onChange={(e) => setNewSpecValue(e.target.value)} onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          if (newSpecKey.trim() && newSpecValue.trim()) {
+                            setVisSpecs([...visSpecs, { key: newSpecKey.trim(), value: newSpecValue.trim() }]);
+                            setNewSpecKey("");
+                            setNewSpecValue("");
+                          }
+                        }
+                      }} className="flex-1 bg-background border border-default rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-accent" />
+                      <button type="button" onClick={() => {
+                        if (newSpecKey.trim() && newSpecValue.trim()) {
+                          setVisSpecs([...visSpecs, { key: newSpecKey.trim(), value: newSpecValue.trim() }]);
+                          setNewSpecKey("");
+                          setNewSpecValue("");
+                        }
+                      }} className="rounded-lg bg-surface border border-default px-3 py-2 text-foreground hover:bg-surface/80 transition-colors">
+                        <Plus className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
+
+                {/* Visual Tags */}
                 <div>
-                  <label className="text-[11px] text-muted-foreground block mb-1">Tags (JSON array, e.g. ["wireless", "bluetooth", "earphones"])</label>
-                  <textarea placeholder='["wireless", "bluetooth", "earphones", "new-arrival"]' rows={1} value={form.tags} onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent resize-none font-mono text-xs" />
+                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2 block">Tags</label>
+                  <div className="space-y-2">
+                    {visTags.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {visTags.map((t, i) => (
+                          <span key={i} className="inline-flex items-center gap-1 rounded-full bg-surface border border-default px-3 py-1.5 text-xs font-medium text-foreground">
+                            {t}
+                            <button type="button" onClick={() => setVisTags(prev => prev.filter((_, idx) => idx !== i))} className="text-muted hover:text-red-400 ml-1">
+                              <X className="h-3 w-3" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <input type="text" placeholder="Add a tag (e.g. wireless)" value={newTag} onChange={(e) => setNewTag(e.target.value)} onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          const val = newTag.trim().toLowerCase();
+                          if (val && !visTags.includes(val)) {
+                            setVisTags([...visTags, val]);
+                            setNewTag("");
+                          }
+                        }
+                      }} className="flex-1 bg-background border border-default rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-accent" />
+                      <button type="button" onClick={() => {
+                        const val = newTag.trim().toLowerCase();
+                        if (val && !visTags.includes(val)) {
+                          setVisTags([...visTags, val]);
+                          setNewTag("");
+                        }
+                      }} className="rounded-lg bg-surface border border-default px-3 py-2 text-foreground hover:bg-surface/80 transition-colors">
+                        <Plus className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

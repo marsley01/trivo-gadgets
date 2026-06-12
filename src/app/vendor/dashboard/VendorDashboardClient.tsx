@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import Image from "next/image";
 import { Database } from "@/types/database.types";
 import { getVendorProducts, getVendorOrders, updateProductStock, createVendorProduct } from "@/lib/actions/vendor";
-import { Package, PackageOpen, ShoppingCart, DollarSign, Plus, X, Edit2, ExternalLink, Save, Menu, LogOut, LayoutDashboard, Settings2, Trash2 } from "lucide-react";
+import { Package, PackageOpen, ShoppingCart, DollarSign, Plus, X, Edit2, ExternalLink, Save, Menu, LogOut, LayoutDashboard, Settings2, Trash2, Sparkles, Loader2 } from "lucide-react";
 
 type Product = Database["public"]["Tables"]["products"]["Row"];
 type AdminOrder = Database["public"]["Tables"]["admin_orders"]["Row"];
@@ -26,6 +26,7 @@ export default function VendorDashboardClient({ vendor }: { vendor: Vendor }) {
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingStock, setEditingStock] = useState<{ id: string; value: string } | null>(null);
@@ -130,6 +131,37 @@ export default function VendorDashboardClient({ vendor }: { vendor: Vendor }) {
     setNewSpecValue("");
     setNewTag("");
     setShowForm(false);
+  };
+
+  const handleAiGenerate = async () => {
+    if (!form.name.trim()) {
+      addToast("Enter a product name first", "error");
+      return;
+    }
+    setAiLoading(true);
+    try {
+      const res = await fetch("/api/admin/ai-generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: form.name }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "AI generation failed");
+      setForm((f) => ({
+        ...f,
+        name: data.title,
+        description: data.description,
+        seo_title: data.seo_title,
+        seo_description: data.seo_description,
+        focus_keyword: data.focus_keyword,
+        category: data.category,
+      }));
+      addToast("AI content generated!", "success");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "AI generation failed";
+      addToast(message, "error");
+    }
+    setAiLoading(false);
   };
 
   const handleCreateProduct = async (e: React.FormEvent) => {
@@ -340,7 +372,13 @@ export default function VendorDashboardClient({ vendor }: { vendor: Vendor }) {
           <form onSubmit={handleCreateProduct} className="mb-6 rounded-xl border border-default bg-card p-5 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="md:col-span-2 lg:col-span-3">
-                <input type="text" placeholder="Product Name" required value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent" />
+                <div className="flex gap-2">
+                  <input type="text" placeholder="Product Name" required value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} className="flex-1 bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent" />
+                  <button type="button" onClick={handleAiGenerate} disabled={aiLoading} className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-pink-500 px-4 py-2.5 text-xs font-bold text-white shadow-md hover:from-purple-500 hover:to-pink-400 transition-all disabled:opacity-50 whitespace-nowrap">
+                    {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    {aiLoading ? "Thinking..." : "AI Generate"}
+                  </button>
+                </div>
               </div>
               <div className="md:col-span-2 lg:col-span-3">
                 <textarea placeholder="Description" required rows={3} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent resize-none" />

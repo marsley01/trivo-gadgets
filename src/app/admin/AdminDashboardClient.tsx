@@ -6,7 +6,7 @@ import { Database } from "@/types/database.types";
 import { getAdminStatsFull, getAllOrders, getVendors, createProduct, updateProduct, deleteProduct, updateOrderStatus, createVendor, updateVendor, deleteVendor, createOrder, deleteOrder } from "@/lib/actions/admin";
 import { sendReceiptEmail } from "@/lib/email/receipt";
 import { analyzeProductSEO, getGradeColor, getGradeBg } from "@/lib/seo";
-import { Package, Users, AlertTriangle, PackageOpen, Plus, X, Edit2, Trash2, BarChart3, DollarSign, ShoppingCart, Truck, Send, Eye, ExternalLink, Download, Loader2, ChevronLeft, Menu, LogOut, Settings2 } from "lucide-react";
+import { Package, Users, AlertTriangle, PackageOpen, Plus, X, Edit2, Trash2, BarChart3, DollarSign, ShoppingCart, Truck, Send, Eye, ExternalLink, Download, Loader2, ChevronLeft, Menu, LogOut, Settings2, Sparkles } from "lucide-react";
 
 type Product = Database["public"]["Tables"]["products"]["Row"];
 type AdminOrder = Database["public"]["Tables"]["admin_orders"]["Row"];
@@ -73,6 +73,7 @@ export default function AdminDashboardClient({
   const [vendors, setVendors] = useState<Vendor[]>(initialVendors);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
   const [tab, setTab] = useState<"products" | "seo" | "transactions" | "vendors" | "import">("products");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -199,6 +200,37 @@ export default function AdminDashboardClient({
     setNewTag("");
     setShowForm(false);
     setEditingId(null);
+  };
+
+  const handleAiGenerate = async () => {
+    if (!form.name.trim()) {
+      addToast("Enter a product name first", "error");
+      return;
+    }
+    setAiLoading(true);
+    try {
+      const res = await fetch("/api/admin/ai-generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: form.name }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "AI generation failed");
+      setForm((f) => ({
+        ...f,
+        name: data.title,
+        description: data.description,
+        seo_title: data.seo_title,
+        seo_description: data.seo_description,
+        focus_keyword: data.focus_keyword,
+        category: data.category,
+      }));
+      addToast("AI content generated!", "success");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "AI generation failed";
+      addToast(message, "error");
+    }
+    setAiLoading(false);
   };
 
   const openEditForm = (product: Product) => {
@@ -601,7 +633,13 @@ export default function AdminDashboardClient({
           <form onSubmit={handleFormSubmit} className="mb-6 rounded-xl border border-default bg-card p-5 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="md:col-span-2 lg:col-span-3">
-                <input type="text" placeholder="Product Name" required value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent" />
+                <div className="flex gap-2">
+                  <input type="text" placeholder="Product Name" required value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} className="flex-1 bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent" />
+                  <button type="button" onClick={handleAiGenerate} disabled={aiLoading} className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-pink-500 px-4 py-2.5 text-xs font-bold text-white shadow-md hover:from-purple-500 hover:to-pink-400 transition-all disabled:opacity-50 whitespace-nowrap">
+                    {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    {aiLoading ? "Thinking..." : "AI Generate"}
+                  </button>
+                </div>
               </div>
               <div className="md:col-span-2 lg:col-span-3">
                 <textarea placeholder="Description" required rows={3} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent resize-none" />

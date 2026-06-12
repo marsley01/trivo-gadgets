@@ -43,7 +43,7 @@ export async function POST(req: Request) {
 
     const { text } = await generateText({
       model: openrouter("google/gemini-2.5-flash"),
-      maxTokens: 1000,
+      maxOutputTokens: 1000,
       system: `You are an expert e-commerce product manager and SEO copywriter for Trivo Kenya, a premium tech gadget store in Kenya.
 Given a rough product description or idea, generate:
 - title: A compelling product title (max 70 characters, SEO-optimized, includes brand if mentioned)

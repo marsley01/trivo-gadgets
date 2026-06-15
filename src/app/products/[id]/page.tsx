@@ -27,11 +27,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const seoTitle = product.seo_title || `${product.name} | Trivo Kenya`;
   const seoDesc = product.seo_description || product.description || `Shop ${product.name} at Trivo Kenya. Premium tech gadgets in Kenya. Best price guaranteed.`;
+  const tags = (product.tags as string[]) || [];
+  const secondaryKw = product.secondary_keywords || "";
+  const allKeywords = [product.focus_keyword, secondaryKw, ...tags].filter(Boolean).join(", ");
 
   return {
     title: seoTitle,
     description: seoDesc,
-    keywords: product.focus_keyword || undefined,
+    keywords: allKeywords || undefined,
     openGraph: {
       title: product.seo_title || `${product.name} — Trivo Kenya`,
       description: seoDesc,
@@ -78,10 +81,11 @@ export default async function ProductPage({ params }: Props) {
             "@context": "https://schema.org",
             "@type": "Product",
             name: product.name,
-            description: product.description || `Premium ${product.category || "tech"} product available at Trivo Kenya`,
+            description: product.long_description || product.description || `Premium ${product.category || "tech"} product available at Trivo Kenya`,
             image: product.image_url || undefined,
             category: product.category || "Electronics",
             sku: product.id,
+            keywords: (product.tags as string[])?.join(", ") || undefined,
             brand: {
               "@type": "Brand",
               name: "Trivo Kenya",

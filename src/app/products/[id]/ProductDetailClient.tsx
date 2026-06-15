@@ -141,7 +141,7 @@ export default function ProductDetailClient({
               <ReviewRating productId={product.id} />
 
               <p className="text-lg text-subtle leading-relaxed">
-                {product.description}
+                {product.long_description || product.description}
               </p>
 
               {/* Variant Selectors */}

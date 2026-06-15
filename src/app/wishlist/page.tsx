@@ -87,6 +87,8 @@ export default function WishlistPage() {
                             material: null,
                             weight: null,
                             dimensions: null,
+                            long_description: null,
+                            secondary_keywords: null,
                             variants: [],
                             variant_options: [],
                             created_at: new Date().toISOString(),

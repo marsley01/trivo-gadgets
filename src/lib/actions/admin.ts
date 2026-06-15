@@ -19,6 +19,8 @@ export async function createProduct(formData: FormData) {
   const supabase = getAdminClient();
   const name = formData.get("name") as string;
   const description = formData.get("description") as string;
+  const long_description = formData.get("long_description") as string;
+  const secondary_keywords = formData.get("secondary_keywords") as string;
   const price = parseInt(formData.get("price") as string) || 0;
   const stock = parseInt(formData.get("stock") as string) || 0;
   const category = formData.get("category") as string;
@@ -60,6 +62,8 @@ export async function createProduct(formData: FormData) {
   const { error } = await supabase.from("products").insert({
     name,
     description: description || null,
+    long_description: long_description || null,
+    secondary_keywords: secondary_keywords || null,
     price,
     stock,
     category: category || null,
@@ -126,6 +130,8 @@ export async function updateProduct(id: string, formData: FormData) {
   const supabase = getAdminClient();
   const name = formData.get("name") as string;
   const description = formData.get("description") as string;
+  const long_description = formData.get("long_description") as string;
+  const secondary_keywords = formData.get("secondary_keywords") as string;
   const price = parseInt(formData.get("price") as string) || 0;
   const stock = parseInt(formData.get("stock") as string) || 0;
   const category = formData.get("category") as string;
@@ -168,6 +174,8 @@ export async function updateProduct(id: string, formData: FormData) {
     .update({
       name,
       description: description || null,
+      long_description: long_description || null,
+      secondary_keywords: secondary_keywords || null,
       price,
       stock,
       category: category || null,

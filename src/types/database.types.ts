@@ -33,6 +33,8 @@ export type Database = {
           dimensions: string | null
           variants: Json
           variant_options: Json
+          long_description: string | null
+          secondary_keywords: string | null
           created_at: string
         }
         Insert: {
@@ -58,6 +60,8 @@ export type Database = {
           dimensions?: string | null
           variants?: Json
           variant_options?: Json
+          long_description?: string | null
+          secondary_keywords?: string | null
           created_at?: string
         }
         Update: {
@@ -83,6 +87,8 @@ export type Database = {
           dimensions?: string | null
           variants?: Json
           variant_options?: Json
+          long_description?: string | null
+          secondary_keywords?: string | null
           created_at?: string
         }
         Relationships: [

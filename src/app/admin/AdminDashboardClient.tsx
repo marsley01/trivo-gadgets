@@ -18,6 +18,8 @@ const categories = ["Audio", "Car Accessories", "Smart Home", "Cables", "Lightin
 const emptyForm = {
   name: "",
   description: "",
+  long_description: "",
+  secondary_keywords: "",
   price: "",
   stock: "0",
   category: "",
@@ -218,13 +220,17 @@ export default function AdminDashboardClient({
       if (!res.ok) throw new Error(data.error || "AI generation failed");
       setForm((f) => ({
         ...f,
-        name: data.title,
-        description: data.description,
+        name: data.seo_title || data.seo_title,
+        description: data.short_description || "",
+        long_description: data.long_description || "",
         seo_title: data.seo_title,
         seo_description: data.seo_description,
         focus_keyword: data.focus_keyword,
+        secondary_keywords: data.secondary_keywords || "",
         category: data.category,
+        tags: JSON.stringify(data.product_tags || []),
       }));
+      setVisTags(data.product_tags || []);
       addToast("AI content generated!", "success");
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "AI generation failed";
@@ -239,6 +245,8 @@ export default function AdminDashboardClient({
     setForm({
       name: product.name,
       description: product.description || "",
+      long_description: product.long_description || "",
+      secondary_keywords: product.secondary_keywords || "",
       price: product.price.toString(),
       stock: product.stock.toString(),
       category: product.category || "",
@@ -303,6 +311,8 @@ export default function AdminDashboardClient({
       const fd = new FormData();
       fd.set("name", form.name);
       fd.set("description", form.description);
+      fd.set("long_description", form.long_description);
+      fd.set("secondary_keywords", form.secondary_keywords);
       fd.set("price", form.price);
       fd.set("stock", form.stock);
       fd.set("category", form.category);
@@ -642,7 +652,10 @@ export default function AdminDashboardClient({
                 </div>
               </div>
               <div className="md:col-span-2 lg:col-span-3">
-                <textarea placeholder="Description" required rows={3} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent resize-none" />
+                <textarea placeholder="Short Description (shown on category pages, 2-3 sentences)" required rows={3} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent resize-none" />
+              </div>
+              <div className="md:col-span-2 lg:col-span-3">
+                <textarea placeholder="Long Description (shown on product page, 180-280 words)" rows={6} value={form.long_description} onChange={(e) => setForm((f) => ({ ...f, long_description: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent resize-none" />
               </div>
               <div>
                 <input type="number" placeholder="Price (KES)" required min="0" value={form.price} onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent" />
@@ -672,13 +685,16 @@ export default function AdminDashboardClient({
               <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">SEO Settings</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="md:col-span-2 lg:col-span-3">
-                  <input type="text" placeholder="SEO Title" value={form.seo_title} onChange={(e) => setForm((f) => ({ ...f, seo_title: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent" />
+                  <input type="text" placeholder="SEO Title (55-65 chars)" value={form.seo_title} onChange={(e) => setForm((f) => ({ ...f, seo_title: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent" />
                 </div>
                 <div className="md:col-span-2 lg:col-span-3">
-                  <textarea placeholder="SEO Meta Description" rows={2} value={form.seo_description} onChange={(e) => setForm((f) => ({ ...f, seo_description: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent resize-none" />
+                  <textarea placeholder="SEO Meta Description (145-160 chars)" rows={2} value={form.seo_description} onChange={(e) => setForm((f) => ({ ...f, seo_description: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent resize-none" />
                 </div>
                 <div>
                   <input type="text" placeholder="Focus Keyword" value={form.focus_keyword} onChange={(e) => setForm((f) => ({ ...f, focus_keyword: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent" />
+                </div>
+                <div className="md:col-span-2 lg:col-span-3">
+                  <input type="text" placeholder="Secondary Keywords (comma-separated)" value={form.secondary_keywords} onChange={(e) => setForm((f) => ({ ...f, secondary_keywords: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent" />
                 </div>
               </div>
             </div>

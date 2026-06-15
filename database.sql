@@ -331,6 +331,10 @@ ALTER TABLE public.products ADD COLUMN IF NOT EXISTS variants JSONB DEFAULT '[]'
 -- variant_options stores SKU-level pricing/stock for each combination
 ALTER TABLE public.products ADD COLUMN IF NOT EXISTS variant_options JSONB DEFAULT '[]'::jsonb;
 
+-- SEO content fields (long-form description + secondary keywords for rich product pages)
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS long_description TEXT;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS secondary_keywords TEXT;
+
 -- Enable RLS on admin_users
 ALTER TABLE public.admin_users ENABLE ROW LEVEL SECURITY;
 

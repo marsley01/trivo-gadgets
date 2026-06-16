@@ -16,7 +16,13 @@ export async function POST(req: NextRequest) {
   );
 
   try {
-    const { email, password, fullName, phone, role } = await req.json();
+    const { email, password, fullName, phone, role, secretCode } = await req.json();
+
+    const expectedSecret = process.env.ADMIN_REGISTRATION_SECRET || "TRIVO_ADMIN_2026";
+
+    if (secretCode !== expectedSecret) {
+      return NextResponse.json({ error: "Invalid secret registration code. Access denied." }, { status: 403 });
+    }
 
     if (!email || !password || !role) {
       return NextResponse.json({ error: "Email, password, and role are required." }, { status: 400 });

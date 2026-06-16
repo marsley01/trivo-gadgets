@@ -85,7 +85,7 @@ export async function createProduct(formData: FormData) {
   });
 
   if (error) throw new Error(error.message);
-  revalidatePath("/");
+  revalidatePath("/", "layout");
 }
 
 async function handleImageUpload(supabase: ReturnType<typeof getAdminClient>, image_file: File | null, image_url: string): Promise<string> {
@@ -197,14 +197,14 @@ export async function updateProduct(id: string, formData: FormData) {
     .eq("id", id);
 
   if (error) throw new Error(error.message);
-  revalidatePath("/");
+  revalidatePath("/", "layout");
 }
 
 export async function deleteProduct(id: string) {
   const supabase = getAdminClient();
   const { error } = await supabase.from("products").delete().eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePath("/");
+  revalidatePath("/", "layout");
 }
 
 export async function getAdminStats() {

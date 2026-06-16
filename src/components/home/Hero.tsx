@@ -222,7 +222,7 @@ export default function Hero({ product }: { product: Product | null }) {
         </div>
       </div>
 
-      <style dangerouslySetInnerHTML={{__html: \`
+      <style dangerouslySetInnerHTML={{__html: `
         @keyframes float {
           0% { transform: translateY(0px); }
           50% { transform: translateY(-15px); }
@@ -244,7 +244,7 @@ export default function Hero({ product }: { product: Product | null }) {
           0% { transform: scale(1); opacity: 0.3; }
           100% { transform: scale(1.1); opacity: 0.6; }
         }
-      \`}} />
+      `}} />
     </section>
   );
 }

@@ -68,6 +68,35 @@ export async function middleware(request: NextRequest) {
   }
   // ── End UUID → Slug redirect ───────────────────────────────────────────────
 
+  // ── WooCommerce → Next.js URL redirects (301) ───────────────────────────────
+  // Redirect old WordPress/WooCommerce URLs that Google may still have indexed.
+  const oldWooPatterns: { regex: RegExp; to: (match: RegExpMatchArray) => string }[] = [
+    { regex: /^\/product\/(.+)/, to: () => "/products" },
+    { regex: /^\/shop\/(.+)/, to: () => "/products" },
+    { regex: /^\/shop\/?$/, to: () => "/products" },
+    { regex: /^\/product-category\/(.+)/, to: (m) => `/categories/${m[1]}` },
+    { regex: /^\/wp-content\/.+/, to: () => "" },
+    { regex: /^\/wp-includes\/.+/, to: () => "" },
+    { regex: /^\/wp-json\/.+/, to: () => "" },
+    { regex: /^\/xmlrpc\.php/, to: () => "" },
+    { regex: /^\/feed\/?/, to: () => "" },
+    { regex: /^\/comments\/feed\/?/, to: () => "" },
+  ];
+
+  const wooMatch = oldWooPatterns.find((p) => p.regex.test(request.nextUrl.pathname));
+  if (wooMatch) {
+    const match = request.nextUrl.pathname.match(wooMatch.regex)!;
+    const dest = wooMatch.to(match);
+    if (!dest) {
+      // Return 410 Gone for WordPress internals — tells Google to drop them fast
+      return new NextResponse(null, { status: 410 });
+    }
+    const redirectUrl = new URL(dest, request.url);
+    redirectUrl.search = request.nextUrl.search;
+    return NextResponse.redirect(redirectUrl, { status: 301 });
+  }
+  // ── End WooCommerce redirects ───────────────────────────────────────────────
+
   const {
     data: { user },
   } = await supabase.auth.getUser();

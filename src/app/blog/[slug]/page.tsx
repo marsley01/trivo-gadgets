@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
+import { createClient as createStaticClient } from "@supabase/supabase-js";
 import { Calendar, ChevronRight, Clock } from "lucide-react";
 import type { Metadata } from "next";
 
@@ -11,7 +12,10 @@ export async function generateStaticParams() {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     return [];
   }
-  const supabase = createClient();
+  const supabase = createStaticClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  );
   const { data: posts } = await supabase.from("blog_posts").select("slug");
   return (posts || []).map((p) => ({ slug: p.slug }));
 }

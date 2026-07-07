@@ -1,6 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+// Regex that matches a standard v4 UUID
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
     request: {
@@ -33,6 +36,28 @@ export async function middleware(request: NextRequest) {
       },
     }
   );
+
+  // ── UUID → Slug redirect (301 Permanent) ──────────────────────────────────
+  // Catches old Google-indexed URLs like /products/1c70e30f-3e51-424e-8353-...
+  // and permanently redirects them to the SEO-friendly slug URL.
+  const productUuidMatch = request.nextUrl.pathname.match(/^\/products\/([^/]+)$/);
+  if (productUuidMatch && UUID_REGEX.test(productUuidMatch[1])) {
+    const uuid = productUuidMatch[1];
+    const { data: product } = await supabase
+      .from("products")
+      .select("slug")
+      .eq("id", uuid)
+      .single();
+
+    if (product?.slug) {
+      const redirectUrl = new URL(`/products/${product.slug}`, request.url);
+      // Preserve any query string (UTM params, etc.)
+      redirectUrl.search = request.nextUrl.search;
+      return NextResponse.redirect(redirectUrl, { status: 301 });
+    }
+    // If no product found, fall through to the [slug] route which will 404
+  }
+  // ── End UUID → Slug redirect ───────────────────────────────────────────────
 
   const {
     data: { user },

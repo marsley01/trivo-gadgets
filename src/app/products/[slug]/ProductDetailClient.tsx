@@ -86,7 +86,7 @@ export default function ProductDetailClient({
             <ShareButton
               title={product.name}
               text={`Check out ${product.name} at Trivo Kenya — KES ${product.price.toLocaleString()}`}
-              url={`https://trivokenya.store/products/${product.id}`}
+              url={`https://trivokenya.store/products/${product.slug}`}
             />
           </div>
 
@@ -215,7 +215,7 @@ export default function ProductDetailClient({
                     Order via WhatsApp
                   </a>
                   <button
-                    onClick={() => toggleItem({ id: product.id, name: product.name, price: product.price, image_url: product.image_url })}
+                    onClick={() => toggleItem({ id: product.id, name: product.name, price: product.price, image_url: product.image_url, slug: product.slug })}
                     className={`inline-flex items-center justify-center gap-2 rounded-full border px-6 py-4 text-sm font-bold transition-all active:scale-95 ${
                       wished
                         ? "border-red-500/30 bg-red-500/10 text-red-400"
@@ -250,7 +250,7 @@ export default function ProductDetailClient({
               <div className="border border-subtle rounded-2xl bg-card/50 p-6 space-y-4">
                 <h4 className="text-xs font-bold uppercase tracking-widest text-foreground flex items-center gap-1.5">
                   <Truck className="h-4.5 w-4.5 text-accent" />
-                  Delivery & Payment Details
+                  Delivery &amp; Payment Details
                 </h4>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">

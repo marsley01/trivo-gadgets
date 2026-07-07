@@ -19,7 +19,7 @@ export default async function ProductsPage() {
   const supabase = createClient();
   const { data: products } = await supabase
     .from("products")
-    .select("id, name, price, image_url, category, seo_description, description")
+    .select("id, name, price, image_url, category, seo_description, description, slug")
     .order("created_at", { ascending: false });
 
   return (
@@ -33,7 +33,7 @@ export default async function ProductsPage() {
         {(products || []).map((product) => (
           <Link
             key={product.id}
-            href={`/products/${product.id}`}
+            href={`/products/${product.slug}`}
             className="group rounded-xl border border-default bg-card p-4 hover:shadow-lg transition-shadow"
           >
             {product.image_url && (

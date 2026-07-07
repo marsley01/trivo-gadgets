@@ -5,22 +5,27 @@ import type { Metadata } from "next";
 import ProductDetailClient from "./ProductDetailClient";
 
 export async function generateStaticParams() {
+  // Guard: if env vars aren't present (e.g. CI build without .env.local),
+  // return empty array so Next.js falls back to on-demand rendering.
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    return [];
+  }
   const supabase = createStaticClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   );
-  const { data: products } = await supabase.from("products").select("id");
-  return (products || []).map((p) => ({ id: p.id }));
+  const { data: products } = await supabase.from("products").select("slug");
+  return (products || []).map((p) => ({ slug: p.slug }));
 }
 
-type Props = { params: { id: string } };
+type Props = { params: { slug: string } };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const supabase = createClient();
   const { data: product } = await supabase
     .from("products")
     .select("*")
-    .eq("id", params.id)
+    .eq("slug", params.slug)
     .single();
 
   if (!product) return { title: "Product Not Found | Trivo Kenya" };
@@ -38,7 +43,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: product.seo_title || `${product.name} — Trivo Kenya`,
       description: seoDesc,
-      url: `https://trivokenya.store/products/${params.id}`,
+      url: `https://trivokenya.store/products/${product.slug}`,
       siteName: "Trivo Kenya",
       images: product.image_url ? [{ url: product.image_url, width: 1200, height: 1200 }] : [],
       locale: "en_KE",
@@ -51,7 +56,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       images: product.image_url ? [product.image_url] : [],
     },
     alternates: {
-      canonical: `/products/${params.id}`,
+      canonical: `/products/${product.slug}`,
     },
   };
 }
@@ -61,7 +66,7 @@ export default async function ProductPage({ params }: Props) {
   const { data: product } = await supabase
     .from("products")
     .select("*")
-    .eq("id", params.id)
+    .eq("slug", params.slug)
     .single();
 
   if (!product) notFound();
@@ -69,7 +74,7 @@ export default async function ProductPage({ params }: Props) {
   const { data: related } = await supabase
     .from("products")
     .select("*")
-    .neq("id", params.id)
+    .neq("id", product.id)
     .limit(4);
 
   return (
@@ -95,7 +100,7 @@ export default async function ProductPage({ params }: Props) {
               price: product.price,
               priceCurrency: "KES",
               availability: product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-              url: `https://trivokenya.store/products/${params.id}`,
+              url: `https://trivokenya.store/products/${product.slug}`,
               seller: {
                 "@type": "Organization",
                 name: "Trivo Kenya",

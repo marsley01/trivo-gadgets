@@ -31,7 +31,7 @@ export default function ProductCard({ product }: { product: Product }) {
   return (
     <div className="group relative flex flex-col overflow-hidden rounded-2xl bg-card transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_30px_rgba(37,211,102,0.15)] border border-transparent hover:border-accent/40">
       {/* Top Image Container */}
-      <Link href={`/products/${product.id}`} className="relative aspect-square sm:aspect-[4/5] w-full overflow-hidden bg-surface flex items-center justify-center">
+      <Link href={`/products/${product.slug}`} className="relative aspect-square sm:aspect-[4/5] w-full overflow-hidden bg-surface flex items-center justify-center">
         <Image
           src={product.image_url || "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?q=80&w=600&auto=format&fit=crop"}
           alt={product.name}
@@ -46,7 +46,7 @@ export default function ProductCard({ product }: { product: Product }) {
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            toggleItem({ id: product.id, name: product.name, price: product.price, image_url: product.image_url });
+            toggleItem({ id: product.id, name: product.name, price: product.price, image_url: product.image_url, slug: product.slug });
           }}
           className="absolute top-3 left-3 z-20 h-8 w-8 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center hover:scale-110 transition-all"
           aria-label={wished ? "Remove from wishlist" : "Add to wishlist"}
@@ -78,7 +78,7 @@ export default function ProductCard({ product }: { product: Product }) {
           {product.category || "Accessory"}
         </div>
         
-        <Link href={`/products/${product.id}`}>
+        <Link href={`/products/${product.slug}`}>
           <h3 className="text-sm sm:text-base font-bold text-foreground mb-1.5 hover:text-accent transition-colors line-clamp-2">
             {product.name}
           </h3>

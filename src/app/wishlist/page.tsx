@@ -47,7 +47,7 @@ export default function WishlistPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
               {items.map((item) => (
                 <div key={item.id} className="group relative rounded-2xl overflow-hidden bg-card border border-subtle/20 hover:border-accent/30 transition-all">
-                  <Link href={`/products/${item.id}`} className="relative aspect-square block bg-white">
+                  <Link href={`/products/${item.slug ?? item.id}`} className="relative aspect-square block bg-white">
                     <Image
                       src={item.image_url || "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?q=80&w=600&auto=format&fit=crop"}
                       alt={item.name}
@@ -57,7 +57,7 @@ export default function WishlistPage() {
                     />
                   </Link>
                   <div className="p-4 space-y-3">
-                    <Link href={`/products/${item.id}`}>
+                    <Link href={`/products/${item.slug ?? item.id}`}>
                       <h3 className="text-sm font-bold text-foreground line-clamp-2 hover:text-accent transition-colors">
                         {item.name}
                       </h3>
@@ -91,6 +91,7 @@ export default function WishlistPage() {
                             secondary_keywords: null,
                             variants: [],
                             variant_options: [],
+                            slug: item.slug ?? "",
                             created_at: new Date().toISOString(),
                           });
                           removeItem(item.id);

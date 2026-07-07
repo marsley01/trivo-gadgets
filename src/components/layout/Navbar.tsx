@@ -92,6 +92,7 @@ export default function Navbar() {
           </div>
 
           <Link href="/about" className="hover:text-foreground transition-colors py-2">About Us</Link>
+          <Link href="/blog" className="hover:text-foreground transition-colors py-2">Blog</Link>
         </nav>
 
         <div className="flex items-center gap-4 text-foreground">
@@ -128,6 +129,7 @@ export default function Navbar() {
             <div className="flex flex-col gap-3">
               <Link href="/" onClick={() => setMobileMenuOpen(false)} className="font-bold text-foreground hover:text-accent transition-colors py-1">Store Home</Link>
               <Link href="/about" onClick={() => setMobileMenuOpen(false)} className="font-bold text-foreground hover:text-accent transition-colors py-1">About Trivo</Link>
+              <Link href="/blog" onClick={() => setMobileMenuOpen(false)} className="font-bold text-foreground hover:text-accent transition-colors py-1">Blog</Link>
             </div>
 
             {/* Categories */}

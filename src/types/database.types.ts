@@ -35,6 +35,7 @@ export type Database = {
           variant_options: Json
           long_description: string | null
           secondary_keywords: string | null
+          slug: string
           created_at: string
         }
         Insert: {
@@ -62,6 +63,7 @@ export type Database = {
           variant_options?: Json
           long_description?: string | null
           secondary_keywords?: string | null
+          slug?: string
           created_at?: string
         }
         Update: {
@@ -89,6 +91,7 @@ export type Database = {
           variant_options?: Json
           long_description?: string | null
           secondary_keywords?: string | null
+          slug?: string
           created_at?: string
         }
         Relationships: [
@@ -304,6 +307,48 @@ export type Database = {
           phone?: string | null
           business_name?: string | null
           status?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      blog_posts: {
+        Row: {
+          id: string
+          title: string
+          slug: string
+          content: string
+          excerpt: string | null
+          cover_image_url: string | null
+          published_at: string
+          seo_title: string | null
+          seo_description: string | null
+          related_product_ids: string[] | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          slug: string
+          content: string
+          excerpt?: string | null
+          cover_image_url?: string | null
+          published_at?: string
+          seo_title?: string | null
+          seo_description?: string | null
+          related_product_ids?: string[] | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          slug?: string
+          content?: string
+          excerpt?: string | null
+          cover_image_url?: string | null
+          published_at?: string
+          seo_title?: string | null
+          seo_description?: string | null
+          related_product_ids?: string[] | null
           created_at?: string
         }
         Relationships: []

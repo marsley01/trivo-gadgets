@@ -424,6 +424,88 @@ export async function updateVendor(id: string, formData: FormData) {
   if (error) throw new Error(error.message);
 }
 
+export async function createBlogPost(formData: FormData) {
+  const supabase = getAdminClient();
+  const title = formData.get("title") as string;
+  const slug = formData.get("slug") as string;
+  const content = formData.get("content") as string;
+  const excerpt = formData.get("excerpt") as string;
+  const cover_image_url = formData.get("cover_image_url") as string;
+  const seo_title = formData.get("seo_title") as string;
+  const seo_description = formData.get("seo_description") as string;
+  const related_product_ids = formData.get("related_product_ids") as string;
+  const published_at = formData.get("published_at") as string;
+
+  let parsedRelated: string[] = [];
+  try { if (related_product_ids) parsedRelated = JSON.parse(related_product_ids); } catch {}
+
+  const { error } = await supabase.from("blog_posts").insert({
+    title,
+    slug,
+    content,
+    excerpt: excerpt || null,
+    cover_image_url: cover_image_url || null,
+    seo_title: seo_title || null,
+    seo_description: seo_description || null,
+    related_product_ids: parsedRelated.length > 0 ? parsedRelated : null,
+    published_at: published_at || undefined,
+  });
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/", "layout");
+}
+
+export async function updateBlogPost(id: string, formData: FormData) {
+  const supabase = getAdminClient();
+  const title = formData.get("title") as string;
+  const slug = formData.get("slug") as string;
+  const content = formData.get("content") as string;
+  const excerpt = formData.get("excerpt") as string;
+  const cover_image_url = formData.get("cover_image_url") as string;
+  const seo_title = formData.get("seo_title") as string;
+  const seo_description = formData.get("seo_description") as string;
+  const related_product_ids = formData.get("related_product_ids") as string;
+  const published_at = formData.get("published_at") as string;
+
+  let parsedRelated: string[] = [];
+  try { if (related_product_ids) parsedRelated = JSON.parse(related_product_ids); } catch {}
+
+  const { error } = await supabase
+    .from("blog_posts")
+    .update({
+      title,
+      slug,
+      content,
+      excerpt: excerpt || null,
+      cover_image_url: cover_image_url || null,
+      seo_title: seo_title || null,
+      seo_description: seo_description || null,
+      related_product_ids: parsedRelated.length > 0 ? parsedRelated : null,
+      published_at: published_at || undefined,
+    })
+    .eq("id", id);
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/", "layout");
+}
+
+export async function deleteBlogPost(id: string) {
+  const supabase = getAdminClient();
+  const { error } = await supabase.from("blog_posts").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/", "layout");
+}
+
+export async function getBlogPosts() {
+  const supabase = getAdminClient();
+  const { data, error } = await supabase
+    .from("blog_posts")
+    .select("*")
+    .order("published_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return data;
+}
+
 export async function deleteVendor(id: string) {
   const supabase = getAdminClient();
 

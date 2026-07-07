@@ -3,12 +3,13 @@
 import { useState, useCallback, useEffect } from "react";
 import Image from "next/image";
 import { Database } from "@/types/database.types";
-import { getAdminStatsFull, getAllOrders, getVendors, createProduct, updateProduct, deleteProduct, updateOrderStatus, createVendor, updateVendor, deleteVendor, createOrder, deleteOrder } from "@/lib/actions/admin";
+import { getAdminStatsFull, getAllOrders, getVendors, createProduct, updateProduct, deleteProduct, updateOrderStatus, createVendor, updateVendor, deleteVendor, createOrder, deleteOrder, createBlogPost, updateBlogPost, deleteBlogPost, getBlogPosts } from "@/lib/actions/admin";
 import { sendReceiptEmail } from "@/lib/email/receipt";
 import { analyzeProductSEO, getGradeColor, getGradeBg } from "@/lib/seo";
-import { Package, Users, AlertTriangle, PackageOpen, Plus, X, Edit2, Trash2, BarChart3, DollarSign, ShoppingCart, Truck, Send, Eye, ExternalLink, Download, Loader2, ChevronLeft, Menu, LogOut, Settings2, Sparkles } from "lucide-react";
+import { Package, Users, AlertTriangle, PackageOpen, Plus, X, Edit2, Trash2, BarChart3, DollarSign, ShoppingCart, Truck, Send, Eye, ExternalLink, Download, Loader2, ChevronLeft, Menu, LogOut, Settings2, Sparkles, FileText, Calendar } from "lucide-react";
 
 type Product = Database["public"]["Tables"]["products"]["Row"];
+type BlogPost = Database["public"]["Tables"]["blog_posts"]["Row"];
 type AdminOrder = Database["public"]["Tables"]["admin_orders"]["Row"];
 type Vendor = Database["public"]["Tables"]["vendors"]["Row"];
 type Subscriber = { email: string; subscribed_at: string | null };
@@ -61,12 +62,14 @@ export default function AdminDashboardClient({
   initialSubscribers,
   initialOrders,
   initialVendors,
+  initialBlogPosts,
 }: {
   initialStats: { totalProducts: number; totalStock: number; subscribersCount: number; lowStock: number };
   initialProducts: Product[];
   initialSubscribers: Subscriber[];
   initialOrders: AdminOrder[];
   initialVendors: Vendor[];
+  initialBlogPosts: BlogPost[];
 }) {
   const [stats, setStats] = useState(initialStats);
   const [products, setProducts] = useState<Product[]>(initialProducts);
@@ -76,7 +79,7 @@ export default function AdminDashboardClient({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
-  const [tab, setTab] = useState<"products" | "seo" | "transactions" | "vendors" | "import">("products");
+  const [tab, setTab] = useState<"products" | "seo" | "transactions" | "vendors" | "import" | "blog">("products");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Product | AdminOrder | Vendor | null>(null);
@@ -88,6 +91,20 @@ export default function AdminDashboardClient({
   const [showAddVendor, setShowAddVendor] = useState(false);
   const [editingVendorId, setEditingVendorId] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>(initialBlogPosts);
+  const [showBlogForm, setShowBlogForm] = useState(false);
+  const [editingBlogId, setEditingBlogId] = useState<string | null>(null);
+  const [blogForm, setBlogForm] = useState({
+    title: "",
+    slug: "",
+    content: "",
+    excerpt: "",
+    cover_image_url: "",
+    seo_title: "",
+    seo_description: "",
+    published_at: new Date().toISOString().split("T")[0],
+    related_product_ids: [] as string[],
+  });
   // CJ Import state
   const [cjInput, setCjInput] = useState("");
   const [cjFetching, setCjFetching] = useState(false);
@@ -103,7 +120,7 @@ export default function AdminDashboardClient({
     is_featured: false,
     stock: "0",
   });
-  const [cjImportSuccess, setCjImportSuccess] = useState<{ id: string; name: string } | null>(null);
+  const [cjImportSuccess, setCjImportSuccess] = useState<{ id: string; name: string; slug?: string } | null>(null);
   const [cjImporting, setCjImporting] = useState(false);
 
   // Visual variant builder state
@@ -167,18 +184,20 @@ export default function AdminDashboardClient({
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const [statsRes, productsRes, subsRes, ordersRes, vendorsRes] = await Promise.all([
+      const [statsRes, productsRes, subsRes, ordersRes, vendorsRes, blogRes] = await Promise.all([
         import("@/lib/actions/admin").then((m) => m.getAdminStatsFull()),
         import("@/lib/actions/admin").then((m) => m.getAdminProducts()),
         import("@/lib/actions/admin").then((m) => m.getAdminSubscribers()),
         import("@/lib/actions/admin").then((m) => m.getAllOrders()),
         import("@/lib/actions/admin").then((m) => m.getVendors()),
+        import("@/lib/actions/admin").then((m) => m.getBlogPosts()),
       ]);
       setStats(statsRes);
       setProducts(productsRes);
       setSubscribers(subsRes);
       setOrders(ordersRes);
       setVendors(vendorsRes);
+      setBlogPosts(blogRes);
     } catch {
       addToast("Failed to refresh data", "error");
     }
@@ -566,6 +585,7 @@ export default function AdminDashboardClient({
             { id: "products" as const, label: "Products", icon: Package },
             { id: "seo" as const, label: "SEO Audit", icon: BarChart3 },
             { id: "transactions" as const, label: "Transactions", icon: ShoppingCart },
+            { id: "blog" as const, label: "Blog", icon: FileText },
             { id: "vendors" as const, label: "Vendors", icon: Users },
             { id: "import" as const, label: "Import", icon: Download },
           ].map((t) => (
@@ -1372,7 +1392,7 @@ export default function AdminDashboardClient({
             </div>
             <div className="flex flex-wrap items-center justify-center gap-3">
               <a
-                href={`/products/${cjImportSuccess.id}`}
+                href={`/products/${cjImportSuccess.slug ?? cjImportSuccess.id}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-xs font-bold text-black hover:bg-neutral-200 transition-colors"
@@ -1625,7 +1645,7 @@ export default function AdminDashboardClient({
                       await createProduct(fd);
                       await refresh();
                       const newProduct = products.find((p) => p.cj_product_id === cjProduct.pid);
-                      setCjImportSuccess({ id: newProduct?.id || "", name: cjImportForm.name });
+                      setCjImportSuccess({ id: newProduct?.id || "", name: cjImportForm.name, slug: newProduct?.slug });
                       addToast("Product added! It's now live on the store.", "success");
                     } catch (err: unknown) {
                       const message = err instanceof Error ? err.message : "Failed to add product";
@@ -1650,6 +1670,185 @@ export default function AdminDashboardClient({
             </div>
           </div>
         )}
+      </section>
+      )}
+
+      {/* ============ BLOG TAB ============ */}
+      {tab === "blog" && (
+      <section>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-foreground">Blog Posts</h2>
+          <button
+            onClick={() => { setShowBlogForm((prev) => { if (!prev) { setEditingBlogId(null); setBlogForm({ title: "", slug: "", content: "", excerpt: "", cover_image_url: "", seo_title: "", seo_description: "", published_at: new Date().toISOString().split("T")[0], related_product_ids: [] }); } return !prev; }); }}
+            className="flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-xs font-bold text-black hover:bg-neutral-200 transition-colors"
+          >
+            {showBlogForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+            {showBlogForm ? "Cancel" : "New Post"}
+          </button>
+        </div>
+
+        {showBlogForm && (
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            setSaving(true);
+            try {
+              const fd = new FormData();
+              fd.set("title", blogForm.title);
+              fd.set("slug", blogForm.slug);
+              fd.set("content", blogForm.content);
+              fd.set("excerpt", blogForm.excerpt);
+              fd.set("cover_image_url", blogForm.cover_image_url);
+              fd.set("seo_title", blogForm.seo_title);
+              fd.set("seo_description", blogForm.seo_description);
+              fd.set("related_product_ids", JSON.stringify(blogForm.related_product_ids));
+              fd.set("published_at", blogForm.published_at);
+
+              if (editingBlogId) {
+                await updateBlogPost(editingBlogId, fd);
+                addToast("Post updated", "success");
+              } else {
+                await createBlogPost(fd);
+                addToast("Post created", "success");
+              }
+              setShowBlogForm(false);
+              setEditingBlogId(null);
+              await refresh();
+            } catch (err: unknown) {
+              const message = err instanceof Error ? err.message : "Something went wrong";
+              addToast(message, "error");
+            }
+            setSaving(false);
+          }} className="mb-6 rounded-xl border border-default bg-card p-5 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <div className="flex gap-2">
+                  <input type="text" placeholder="Post Title" required value={blogForm.title} onChange={(e) => setBlogForm((f) => ({ ...f, title: e.target.value, slug: editingBlogId ? f.slug : e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") }))} className="flex-1 bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent" />
+                </div>
+              </div>
+              <div>
+                <input type="text" placeholder="Slug (auto-generated)" required value={blogForm.slug} onChange={(e) => setBlogForm((f) => ({ ...f, slug: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent" />
+              </div>
+              <div>
+                <input type="date" placeholder="Published At" value={blogForm.published_at} onChange={(e) => setBlogForm((f) => ({ ...f, published_at: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-accent" />
+              </div>
+              <div className="md:col-span-2">
+                <input type="url" placeholder="Cover Image URL" value={blogForm.cover_image_url} onChange={(e) => setBlogForm((f) => ({ ...f, cover_image_url: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent" />
+              </div>
+              <div className="md:col-span-2">
+                <textarea placeholder="Excerpt (brief summary shown on blog listing)" rows={2} value={blogForm.excerpt} onChange={(e) => setBlogForm((f) => ({ ...f, excerpt: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent resize-none" />
+              </div>
+              <div className="md:col-span-2">
+                <textarea placeholder="Content (HTML supported)" required rows={12} value={blogForm.content} onChange={(e) => setBlogForm((f) => ({ ...f, content: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent resize-none font-mono" />
+                <p className="text-[11px] text-muted-foreground mt-1">Supports HTML. Wrap paragraphs in &lt;p&gt; tags, headings in &lt;h2&gt;, &lt;h3&gt;, etc.</p>
+              </div>
+            </div>
+
+            <div className="border-t border-default pt-4">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">SEO Settings</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <input type="text" placeholder="SEO Title (leave blank to use post title)" value={blogForm.seo_title} onChange={(e) => setBlogForm((f) => ({ ...f, seo_title: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent" />
+                </div>
+                <div className="md:col-span-2">
+                  <textarea placeholder="SEO Meta Description" rows={2} value={blogForm.seo_description} onChange={(e) => setBlogForm((f) => ({ ...f, seo_description: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent resize-none" />
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-default pt-4">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Related Products</h3>
+              <div className="flex flex-wrap gap-2">
+                {products.map((p) => (
+                  <label key={p.id} className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs cursor-pointer transition-colors ${blogForm.related_product_ids.includes(p.id) ? "border-accent bg-accent/10 text-accent" : "border-default hover:border-accent/30"}`}>
+                    <input
+                      type="checkbox"
+                      checked={blogForm.related_product_ids.includes(p.id)}
+                      onChange={(e) => setBlogForm((f) => ({
+                        ...f,
+                        related_product_ids: e.target.checked
+                          ? [...f.related_product_ids, p.id]
+                          : f.related_product_ids.filter((id) => id !== p.id),
+                      }))}
+                      className="sr-only"
+                    />
+                    {p.name}
+                  </label>
+                ))}
+              </div>
+              {products.length === 0 && <p className="text-xs text-muted-foreground">No products available.</p>}
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button type="button" onClick={() => { setShowBlogForm(false); setEditingBlogId(null); }} className="rounded-lg border border-default px-5 py-2 text-xs font-medium text-muted hover:text-foreground transition-colors">Cancel</button>
+              <button type="submit" disabled={saving} className="rounded-lg bg-white px-5 py-2 text-xs font-bold text-black hover:bg-neutral-200 transition-colors disabled:opacity-50 flex items-center gap-2">
+                {saving && <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-black border-t-transparent" />}
+                {editingBlogId ? "Update Post" : "Create Post"}
+              </button>
+            </div>
+          </form>
+        )}
+
+        <div className="overflow-x-auto rounded-xl border border-default bg-card">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-surface text-xs uppercase text-muted-foreground border-b border-default">
+              <tr>
+                <th className="px-4 py-3">Title</th>
+                <th className="px-4 py-3">Slug</th>
+                <th className="px-4 py-3">Published</th>
+                <th className="px-4 py-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {blogPosts.map((post) => (
+                <tr key={post.id} className="border-b border-subtle hover:bg-surface/20 transition-colors">
+                  <td className="px-4 py-3 font-medium text-foreground max-w-xs truncate">{post.title}</td>
+                  <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{post.slug}</td>
+                  <td className="px-4 py-3 text-muted-foreground text-xs">
+                    <span className="flex items-center gap-1.5">
+                      <Calendar className="h-3.5 w-3.5" />
+                      {new Date(post.published_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-right whitespace-nowrap">
+                    <button onClick={() => {
+                      setBlogForm({
+                        title: post.title,
+                        slug: post.slug,
+                        content: post.content,
+                        excerpt: post.excerpt || "",
+                        cover_image_url: post.cover_image_url || "",
+                        seo_title: post.seo_title || "",
+                        seo_description: post.seo_description || "",
+                        published_at: post.published_at.split("T")[0],
+                        related_product_ids: (post.related_product_ids as string[]) || [],
+                      });
+                      setEditingBlogId(post.id);
+                      setShowBlogForm(true);
+                    }} className="inline-flex items-center gap-1 text-xs text-muted hover:text-foreground transition-colors mr-3">
+                      <Edit2 className="h-3.5 w-3.5" /> Edit
+                    </button>
+                    <button onClick={async () => {
+                      if (!confirm(`Delete "${post.title}"?`)) return;
+                      try {
+                        await deleteBlogPost(post.id);
+                        addToast("Post deleted", "success");
+                        setBlogPosts((prev) => prev.filter((p) => p.id !== post.id));
+                      } catch (err: unknown) {
+                        const message = err instanceof Error ? err.message : "Failed to delete";
+                        addToast(message, "error");
+                      }
+                    }} className="inline-flex items-center gap-1 text-xs text-muted hover:text-red-400 transition-colors">
+                      <Trash2 className="h-3.5 w-3.5" /> Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {blogPosts.length === 0 && (
+                <tr><td colSpan={4} className="px-4 py-10 text-center text-sm text-muted-foreground">No blog posts yet.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </section>
       )}
 

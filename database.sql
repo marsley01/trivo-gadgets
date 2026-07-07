@@ -375,3 +375,65 @@ CREATE POLICY "Authenticated update" ON storage.objects FOR UPDATE TO authentica
 
 DROP POLICY IF EXISTS "Authenticated delete" ON storage.objects;
 CREATE POLICY "Authenticated delete" ON storage.objects FOR DELETE TO authenticated USING (bucket_id = 'product-images');
+
+-- ==============================================================================
+-- SLUG MIGRATION
+-- Run this in the Supabase SQL Editor BEFORE deploying slug-based routing.
+-- ==============================================================================
+
+-- Step 1: Add the slug column (nullable first so existing rows don't violate NOT NULL)
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS slug TEXT;
+
+-- Step 2: Backfill slugs from existing product names
+--   Rule: lowercase → strip special chars → spaces→hyphens → append "-kenya"
+--   Example: "Oraimo Space Buds ANC" → "oraimo-space-buds-anc-kenya"
+UPDATE public.products
+SET slug = regexp_replace(
+              regexp_replace(
+                lower(trim(name)),
+                '[^a-z0-9\s-]', '', 'g'
+              ),
+              '\s+', '-', 'g'
+           ) || '-kenya'
+WHERE slug IS NULL;
+
+-- Step 3: Enforce NOT NULL + UNIQUE after backfill is complete
+ALTER TABLE public.products ALTER COLUMN slug SET NOT NULL;
+ALTER TABLE public.products DROP CONSTRAINT IF EXISTS products_slug_key;
+ALTER TABLE public.products ADD CONSTRAINT products_slug_key UNIQUE (slug);
+
+-- Step 4: Create index for fast slug lookups on the product detail page
+CREATE INDEX IF NOT EXISTS idx_products_slug ON public.products(slug);
+
+-- ==============================================================================
+-- BLOG POSTS
+-- Simple blog for product guides, reviews, and tech news.
+-- ==============================================================================
+
+CREATE TABLE IF NOT EXISTS public.blog_posts (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  title TEXT NOT NULL,
+  slug TEXT UNIQUE NOT NULL,
+  content TEXT NOT NULL,
+  excerpt TEXT,
+  cover_image_url TEXT,
+  published_at TIMESTAMPTZ DEFAULT now(),
+  seo_title TEXT,
+  seo_description TEXT,
+  related_product_ids UUID[] DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE public.blog_posts ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow public read blog_posts" ON public.blog_posts;
+CREATE POLICY "Allow public read blog_posts" ON public.blog_posts
+  FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Allow authenticated all blog_posts" ON public.blog_posts;
+CREATE POLICY "Allow authenticated all blog_posts" ON public.blog_posts
+  FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+CREATE INDEX IF NOT EXISTS idx_blog_posts_slug ON public.blog_posts(slug);
+CREATE INDEX IF NOT EXISTS idx_blog_posts_published_at ON public.blog_posts(published_at DESC);
+

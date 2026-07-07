@@ -3,6 +3,7 @@
 -- ==============================================================================
 
 -- Bootstrap: exec_sql helper for auto-migrations (create once, use everywhere)
+-- SECURITY: Restricted to service_role only — revoked from PUBLIC and anon
 CREATE OR REPLACE FUNCTION public.exec_sql(query text)
 RETURNS void
 SECURITY DEFINER
@@ -13,6 +14,10 @@ BEGIN
   EXECUTE query;
 END;
 $$;
+
+REVOKE EXECUTE ON FUNCTION public.exec_sql(text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.exec_sql(text) TO service_role;
+
 -- This script configures the relational database schema, auto-sync triggers,
 -- Row Level Security (RLS) policies, and seed products for Trivo Kenya.
 -- Run this entire script inside the Supabase SQL Editor.
@@ -165,7 +170,7 @@ END $$;
 
 -- Automatically create customer profile when a new user registers in Supabase Auth
 CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER SET search_path = public AS $$
 BEGIN
   INSERT INTO public.customers (user_id, email, full_name, phone)
   VALUES (
@@ -177,7 +182,7 @@ BEGIN
   ON CONFLICT (user_id) DO NOTHING;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER; -- Runs with high privileges to bypass client restrictions
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Trigger to execute on signup
 CREATE TRIGGER on_auth_user_created
@@ -205,8 +210,6 @@ CREATE POLICY "Allow public read access on products" ON public.products
   FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "Allow authenticated full access on products" ON public.products;
-CREATE POLICY "Allow authenticated full access on products" ON public.products
-  FOR ALL TO authenticated USING (true);
 
 DROP POLICY IF EXISTS "Allow vendor read own products" ON public.products;
 CREATE POLICY "Allow vendor read own products" ON public.products
@@ -230,8 +233,6 @@ CREATE POLICY "Allow public insert on subscribers" ON public.subscribers
   FOR INSERT WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Allow authenticated full access on subscribers" ON public.subscribers;
-CREATE POLICY "Allow authenticated full access on subscribers" ON public.subscribers
-  FOR ALL TO authenticated USING (true);
 
 -- Customers Policies
 DROP POLICY IF EXISTS "Allow customers to manage their own profile" ON public.customers;
@@ -260,8 +261,6 @@ CREATE POLICY "Allow public read vendors" ON public.vendors
   FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "Allow admin all vendors" ON public.vendors;
-CREATE POLICY "Allow admin all vendors" ON public.vendors
-  FOR ALL TO authenticated USING (true);
 
 DROP POLICY IF EXISTS "Allow vendor read own" ON public.vendors;
 CREATE POLICY "Allow vendor read own" ON public.vendors
@@ -297,12 +296,10 @@ DROP POLICY IF EXISTS "Allow public read reviews" ON public.reviews;
 CREATE POLICY "Allow public read reviews" ON public.reviews FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "Allow public insert reviews" ON public.reviews;
-CREATE POLICY "Allow public insert reviews" ON public.reviews FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow authenticated insert reviews" ON public.reviews FOR INSERT TO authenticated WITH CHECK (true);
 
 -- Admin Orders Policies
 DROP POLICY IF EXISTS "Allow public read admin_orders by receipt" ON public.admin_orders;
-CREATE POLICY "Allow public read admin_orders by receipt" ON public.admin_orders
-  FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "Allow vendor read own admin_orders" ON public.admin_orders;
 CREATE POLICY "Allow vendor read own admin_orders" ON public.admin_orders
@@ -345,9 +342,6 @@ CREATE POLICY "Allow admin users to select own" ON public.admin_users
   USING (email = auth.email());
 
 DROP POLICY IF EXISTS "Allow admin users to insert own" ON public.admin_users;
-CREATE POLICY "Allow admin users to insert own" ON public.admin_users
-  FOR INSERT TO authenticated
-  WITH CHECK (email = auth.email());
 
 -- ------------------------------------------------------------------------------
 -- 6. SEED DATA (Clean, conflict-safe upserts)
@@ -371,10 +365,15 @@ DROP POLICY IF EXISTS "Authenticated insert" ON storage.objects;
 CREATE POLICY "Authenticated insert" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'product-images');
 
 DROP POLICY IF EXISTS "Authenticated update" ON storage.objects;
-CREATE POLICY "Authenticated update" ON storage.objects FOR UPDATE TO authenticated USING (bucket_id = 'product-images');
+CREATE POLICY "Authenticated update own" ON storage.objects
+  FOR UPDATE TO authenticated
+  USING (bucket_id = 'product-images' AND owner_id = auth.uid())
+  WITH CHECK (bucket_id = 'product-images' AND owner_id = auth.uid());
 
 DROP POLICY IF EXISTS "Authenticated delete" ON storage.objects;
-CREATE POLICY "Authenticated delete" ON storage.objects FOR DELETE TO authenticated USING (bucket_id = 'product-images');
+CREATE POLICY "Authenticated delete own" ON storage.objects
+  FOR DELETE TO authenticated
+  USING (bucket_id = 'product-images' AND owner_id = auth.uid());
 
 -- ==============================================================================
 -- SLUG MIGRATION
@@ -431,8 +430,6 @@ CREATE POLICY "Allow public read blog_posts" ON public.blog_posts
   FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "Allow authenticated all blog_posts" ON public.blog_posts;
-CREATE POLICY "Allow authenticated all blog_posts" ON public.blog_posts
-  FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
 CREATE INDEX IF NOT EXISTS idx_blog_posts_slug ON public.blog_posts(slug);
 CREATE INDEX IF NOT EXISTS idx_blog_posts_published_at ON public.blog_posts(published_at DESC);

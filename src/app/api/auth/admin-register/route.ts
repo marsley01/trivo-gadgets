@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
+import { rateLimit } from "@/lib/rate-limiter";
 
 export const dynamic = "force-dynamic";
 
@@ -9,6 +10,15 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
+  const { allowed, retryAfter } = rateLimit(`admin-register:${ip}`, 5, 60000);
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again later." },
+      { status: 429, headers: { "Retry-After": retryAfter.toString() } }
+    );
+  }
+
   const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -18,7 +28,10 @@ export async function POST(req: NextRequest) {
   try {
     const { email, password, fullName, phone, role, secretCode } = await req.json();
 
-    const expectedSecret = process.env.ADMIN_REGISTRATION_SECRET || "TRIVO_ADMIN_2026";
+    const expectedSecret = process.env.ADMIN_REGISTRATION_SECRET;
+    if (!expectedSecret) {
+      return NextResponse.json({ error: "Admin registration is not configured." }, { status: 500 });
+    }
 
     if (secretCode !== expectedSecret) {
       return NextResponse.json({ error: "Invalid secret registration code. Access denied." }, { status: 403 });
@@ -26,6 +39,10 @@ export async function POST(req: NextRequest) {
 
     if (!email || !password || !role) {
       return NextResponse.json({ error: "Email, password, and role are required." }, { status: 400 });
+    }
+
+    if (typeof password !== "string" || password.length < 8) {
+      return NextResponse.json({ error: "Password must be at least 8 characters." }, { status: 400 });
     }
 
     // Create the Supabase auth user
@@ -37,7 +54,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (authError) {
-      return NextResponse.json({ error: authError.message }, { status: 400 });
+      return NextResponse.json({ error: "Registration failed. The email may already be in use." }, { status: 400 });
     }
 
     // Insert into admin_users table using service role (bypasses RLS)
@@ -49,7 +66,7 @@ export async function POST(req: NextRequest) {
     if (adminError) {
       // Clean up auth user if admin insert fails
       await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
-      return NextResponse.json({ error: adminError.message }, { status: 500 });
+      return NextResponse.json({ error: "Registration failed. Please try again." }, { status: 500 });
     }
 
     // Send welcome email via Resend

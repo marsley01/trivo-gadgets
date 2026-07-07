@@ -62,17 +62,6 @@ export default function VendorLogin() {
       return;
     }
 
-    const user = authData.user;
-    const tenantId = user?.user_metadata?.tenant_id;
-    
-    // Prevent cross-portal login: If they have a tenant_id, it must be 'vendor'
-    if (tenantId && tenantId !== "vendor") {
-      await supabase.auth.signOut();
-      setError(`This account belongs to a ${tenantId}. Please use the correct portal to log in.`);
-      setLoading(false);
-      return;
-    }
-
     const { data: vendor } = await supabase
       .from("vendors")
       .select("id, status")
@@ -81,7 +70,7 @@ export default function VendorLogin() {
 
     if (!vendor) {
       await supabase.auth.signOut();
-      setError("Not authorised as a vendor");
+      setError("Wrong email or password");
       setLoading(false);
       return;
     }

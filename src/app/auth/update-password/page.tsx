@@ -19,14 +19,16 @@ export default function UpdatePasswordPage() {
   const supabase = createClient();
 
   useEffect(() => {
-    // Check if the user is authenticated (has a session from the callback link)
+    let cancelled = false;
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
+      if (cancelled) return;
       if (!session) {
         setError("Your password reset link is invalid or expired. Please request a new one.");
       }
     };
     checkSession();
+    return () => { cancelled = true; };
   }, [supabase]);
 
   const handleUpdatePassword = async (e: React.FormEvent) => {

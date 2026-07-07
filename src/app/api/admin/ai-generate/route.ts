@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateText } from "ai";
+import { createClient } from "@supabase/supabase-js";
+import { rateLimit } from "@/lib/rate-limiter";
 
 const openrouter = createOpenAI({
   baseURL: "https://openrouter.ai/api/v1",
@@ -10,11 +12,6 @@ const openrouter = createOpenAI({
 export async function GET() {
   return NextResponse.json({ error: "Not found" }, { status: 404 });
 }
-
-// Simple in-memory rate limiter
-const rateLimitCache = new Map<string, { count: number; timestamp: number }>();
-const RATE_LIMIT = 5; // requests
-const TIME_WINDOW = 60 * 1000; // 1 minute
 
 const SYSTEM_PROMPT = `You are an expert eCommerce SEO copywriter for Trivo Kenya (trivokenya.store), a premium tech and gadgets dropshipping store based in Nairobi, Kenya. Your sole job is to generate product content that ranks on Google Kenya, drives organic traffic, and converts browsers into buyers.
 
@@ -82,24 +79,22 @@ No markdown formatting, no code fences, just raw JSON.`;
 
 export async function POST(req: Request) {
   try {
-    // Optional: Get IP or user identifier for rate limiting
-    const ip = req.headers.get("x-forwarded-for") || "unknown_client";
-    const now = Date.now();
-    
-    // Check rate limit
-    const userLimit = rateLimitCache.get(ip) || { count: 0, timestamp: now };
-    
-    if (now - userLimit.timestamp > TIME_WINDOW) {
-      userLimit.count = 1;
-      userLimit.timestamp = now;
-    } else {
-      userLimit.count += 1;
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Authentication required." }, { status: 401 });
     }
-    
-    rateLimitCache.set(ip, userLimit);
 
-    if (userLimit.count > RATE_LIMIT) {
-      return NextResponse.json({ error: "Rate limit exceeded. Please wait a minute." }, { status: 429 });
+    const ip = req.headers.get("x-forwarded-for") || user.id;
+    const { allowed, retryAfter } = rateLimit(`ai-generate:${ip}`, 10, 60000);
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "Rate limit exceeded. Please wait a minute." },
+        { status: 429, headers: { "Retry-After": retryAfter.toString() } }
+      );
     }
 
     const { prompt } = await req.json();

@@ -1,9 +1,11 @@
 "use server";
 
 import { createServerClient } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 import { Database, type Json } from "@/types/database.types";
 import { revalidatePath } from "next/cache";
 import { upscaleImage } from "@/lib/upscale";
+import DOMPurify from "isomorphic-dompurify";
 
 type Product = Database["public"]["Tables"]["products"]["Row"];
 
@@ -15,26 +17,133 @@ function getAdminClient() {
   );
 }
 
+async function verifyAdminAuth(requiredRole?: "admin" | "superadmin") {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    throw new Error("Unauthorized");
+  }
+  const { data: adminUser } = await supabase
+    .from("admin_users")
+    .select("role")
+    .eq("email", user.email)
+    .single();
+  if (!adminUser) {
+    throw new Error("Forbidden");
+  }
+  if (requiredRole === "superadmin" && adminUser.role !== "superadmin") {
+    throw new Error("Forbidden: superadmin role required");
+  }
+  return user;
+}
+
+function validateUrl(input: string): boolean {
+  try {
+    const url = new URL(input);
+    if (url.protocol !== "https:" && url.protocol !== "http:") return false;
+    if (url.hostname === "localhost" || url.hostname === "127.0.0.1" || url.hostname === "0.0.0.0") return false;
+    if (url.hostname.startsWith("169.254") || url.hostname.startsWith("10.") || url.hostname.startsWith("172.") || url.hostname.startsWith("192.168")) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function handleImageUpload(supabase: ReturnType<typeof getAdminClient>, image_file: File | null, image_url: string): Promise<string> {
+  if (image_file && image_file.size > 0) {
+    const maxSize = 5 * 1024 * 1024;
+    if (image_file.size > maxSize) {
+      throw new Error("Image too large. Maximum size is 5MB.");
+    }
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowedTypes.includes(image_file.type)) {
+      throw new Error("Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed.");
+    }
+    const arrayBuffer = await image_file.arrayBuffer();
+    const inputBuffer = Buffer.from(arrayBuffer);
+    const { buffer, ext } = await upscaleImage(inputBuffer);
+    const fileName = `${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
+    const { error: uploadError } = await supabase.storage
+      .from("product-images")
+      .upload(fileName, buffer, { contentType: `image/${ext === "jpg" ? "jpeg" : ext}` });
+    if (uploadError) throw new Error(`Image upload failed: ${uploadError.message}`);
+    const { data: { publicUrl } } = supabase.storage
+      .from("product-images")
+      .getPublicUrl(fileName);
+    return publicUrl;
+  }
+
+  if (image_url && image_url.startsWith("http")) {
+    if (!validateUrl(image_url)) {
+      throw new Error("Invalid image URL: URL must be a valid public HTTPS URL.");
+    }
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
+      const res = await fetch(image_url, { signal: controller.signal });
+      clearTimeout(timeout);
+      if (res.ok) {
+        const contentType = res.headers.get("content-type") || "";
+        if (!contentType.startsWith("image/")) {
+          throw new Error("URL does not point to a valid image.");
+        }
+        const contentLength = res.headers.get("content-length");
+        if (contentLength && parseInt(contentLength) > 5 * 1024 * 1024) {
+          throw new Error("Remote image too large. Maximum size is 5MB.");
+        }
+        const inputBuffer = Buffer.from(await res.arrayBuffer());
+        const { buffer, ext } = await upscaleImage(inputBuffer);
+        const fileName = `${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
+        const { error: uploadError } = await supabase.storage
+          .from("product-images")
+          .upload(fileName, buffer, { contentType: `image/${ext === "jpg" ? "jpeg" : ext}` });
+        if (uploadError) throw new Error(`Image upload failed: ${uploadError.message}`);
+        const { data: { publicUrl } } = supabase.storage
+          .from("product-images")
+          .getPublicUrl(fileName);
+        return publicUrl;
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === "AbortError") {
+        throw new Error("Image fetch timed out.");
+      }
+      if (err instanceof Error && err.message.startsWith("Image")) throw err;
+    }
+  }
+
+  return image_url || "";
+}
+
 export async function createProduct(formData: FormData) {
+  await verifyAdminAuth();
   const supabase = getAdminClient();
-  const name = formData.get("name") as string;
-  const description = formData.get("description") as string;
-  const long_description = formData.get("long_description") as string;
-  const secondary_keywords = formData.get("secondary_keywords") as string;
+  const name = (formData.get("name") as string || "").trim();
+  if (!name) throw new Error("Product name is required.");
+  if (name.length > 200) throw new Error("Product name must be 200 characters or less.");
+
+  const description = (formData.get("description") as string || "").trim();
+  const long_description = (formData.get("long_description") as string || "").trim();
+  const secondary_keywords = (formData.get("secondary_keywords") as string || "").trim();
   const price = parseInt(formData.get("price") as string) || 0;
-  const stock = parseInt(formData.get("stock") as string) || 0;
-  const category = formData.get("category") as string;
-  const image_url = formData.get("image_url") as string;
+  if (price <= 0) throw new Error("Price must be greater than 0.");
+  if (price > 10000000) throw new Error("Price exceeds maximum allowed.");
+  const stock = Math.max(0, parseInt(formData.get("stock") as string) || 0);
+  if (stock > 100000) throw new Error("Stock exceeds maximum allowed.");
+  const category = (formData.get("category") as string || "").trim();
+  const image_url = (formData.get("image_url") as string || "").trim();
   const image_file = formData.get("image_file") as File | null;
   const is_featured = formData.get("is_featured") === "true";
-  const seo_title = formData.get("seo_title") as string;
-  const seo_description = formData.get("seo_description") as string;
-  const focus_keyword = formData.get("focus_keyword") as string;
-  const cj_product_id = formData.get("cj_product_id") as string;
-  const brand = formData.get("brand") as string;
-  const material = formData.get("material") as string;
-  const weight = formData.get("weight") as string;
-  const dimensions = formData.get("dimensions") as string;
+  const seo_title = (formData.get("seo_title") as string || "").trim();
+  const seo_description = (formData.get("seo_description") as string || "").trim();
+  const focus_keyword = (formData.get("focus_keyword") as string || "").trim();
+  const cj_product_id = (formData.get("cj_product_id") as string || "").trim();
+  const brand = (formData.get("brand") as string || "").trim();
+  const material = (formData.get("material") as string || "").trim();
+  const weight = (formData.get("weight") as string || "").trim();
+  const dimensions = (formData.get("dimensions") as string || "").trim();
   const features = formData.get("features") as string;
   const specifications = formData.get("specifications") as string;
   const tags = formData.get("tags") as string;
@@ -88,63 +197,32 @@ export async function createProduct(formData: FormData) {
   revalidatePath("/", "layout");
 }
 
-async function handleImageUpload(supabase: ReturnType<typeof getAdminClient>, image_file: File | null, image_url: string): Promise<string> {
-  if (image_file && image_file.size > 0) {
-    const arrayBuffer = await image_file.arrayBuffer();
-    const inputBuffer = Buffer.from(arrayBuffer);
-    const { buffer, ext } = await upscaleImage(inputBuffer);
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
-    const { error: uploadError } = await supabase.storage
-      .from("product-images")
-      .upload(fileName, buffer, { contentType: `image/${ext === "jpg" ? "jpeg" : ext}` });
-    if (uploadError) throw new Error(`Image upload failed: ${uploadError.message}`);
-    const { data: { publicUrl } } = supabase.storage
-      .from("product-images")
-      .getPublicUrl(fileName);
-    return publicUrl;
-  }
-
-  if (image_url && image_url.startsWith("http")) {
-    try {
-      const res = await fetch(image_url);
-      if (res.ok) {
-        const inputBuffer = Buffer.from(await res.arrayBuffer());
-        const { buffer, ext } = await upscaleImage(inputBuffer);
-        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
-        const { error: uploadError } = await supabase.storage
-          .from("product-images")
-          .upload(fileName, buffer, { contentType: `image/${ext === "jpg" ? "jpeg" : ext}` });
-        if (uploadError) throw new Error(`Image upload failed: ${uploadError.message}`);
-        const { data: { publicUrl } } = supabase.storage
-          .from("product-images")
-          .getPublicUrl(fileName);
-        return publicUrl;
-      }
-    } catch {}
-  }
-
-  return image_url;
-}
-
 export async function updateProduct(id: string, formData: FormData) {
+  await verifyAdminAuth();
   const supabase = getAdminClient();
-  const name = formData.get("name") as string;
-  const description = formData.get("description") as string;
-  const long_description = formData.get("long_description") as string;
-  const secondary_keywords = formData.get("secondary_keywords") as string;
+  const name = (formData.get("name") as string || "").trim();
+  if (!name) throw new Error("Product name is required.");
+  if (name.length > 200) throw new Error("Product name must be 200 characters or less.");
+
+  const description = (formData.get("description") as string || "").trim();
+  const long_description = (formData.get("long_description") as string || "").trim();
+  const secondary_keywords = (formData.get("secondary_keywords") as string || "").trim();
   const price = parseInt(formData.get("price") as string) || 0;
-  const stock = parseInt(formData.get("stock") as string) || 0;
-  const category = formData.get("category") as string;
-  const image_url = formData.get("image_url") as string;
+  if (price <= 0) throw new Error("Price must be greater than 0.");
+  if (price > 10000000) throw new Error("Price exceeds maximum allowed.");
+  const stock = Math.max(0, parseInt(formData.get("stock") as string) || 0);
+  if (stock > 100000) throw new Error("Stock exceeds maximum allowed.");
+  const category = (formData.get("category") as string || "").trim();
+  const image_url = (formData.get("image_url") as string || "").trim();
   const image_file = formData.get("image_file") as File | null;
   const is_featured = formData.get("is_featured") === "true";
-  const seo_title = formData.get("seo_title") as string;
-  const seo_description = formData.get("seo_description") as string;
-  const focus_keyword = formData.get("focus_keyword") as string;
-  const brand = formData.get("brand") as string;
-  const material = formData.get("material") as string;
-  const weight = formData.get("weight") as string;
-  const dimensions = formData.get("dimensions") as string;
+  const seo_title = (formData.get("seo_title") as string || "").trim();
+  const seo_description = (formData.get("seo_description") as string || "").trim();
+  const focus_keyword = (formData.get("focus_keyword") as string || "").trim();
+  const brand = (formData.get("brand") as string || "").trim();
+  const material = (formData.get("material") as string || "").trim();
+  const weight = (formData.get("weight") as string || "").trim();
+  const dimensions = (formData.get("dimensions") as string || "").trim();
   const features = formData.get("features") as string;
   const specifications = formData.get("specifications") as string;
   const tags = formData.get("tags") as string;
@@ -201,6 +279,7 @@ export async function updateProduct(id: string, formData: FormData) {
 }
 
 export async function deleteProduct(id: string) {
+  await verifyAdminAuth();
   const supabase = getAdminClient();
   const { error } = await supabase.from("products").delete().eq("id", id);
   if (error) throw new Error(error.message);
@@ -208,6 +287,7 @@ export async function deleteProduct(id: string) {
 }
 
 export async function getAdminStats() {
+  await verifyAdminAuth();
   const supabase = getAdminClient();
 
   const { data: products, error: productsError } = await supabase
@@ -230,6 +310,7 @@ export async function getAdminStats() {
 }
 
 export async function getAdminProducts() {
+  await verifyAdminAuth();
   const supabase = getAdminClient();
 
   const { data, error } = await supabase
@@ -242,6 +323,7 @@ export async function getAdminProducts() {
 }
 
 export async function getAdminSubscribers() {
+  await verifyAdminAuth();
   const supabase = getAdminClient();
 
   const { data, error } = await supabase
@@ -254,6 +336,7 @@ export async function getAdminSubscribers() {
 }
 
 export async function getAdminStatsFull() {
+  await verifyAdminAuth();
   const supabase = getAdminClient();
 
   const [productsResult, { count: subscribersCount }, { count: ordersCount }, ordersTotalResult] =
@@ -275,6 +358,7 @@ export async function getAdminStatsFull() {
 }
 
 export async function getAllOrders() {
+  await verifyAdminAuth();
   const supabase = getAdminClient();
 
   const { data, error } = await supabase
@@ -287,6 +371,7 @@ export async function getAllOrders() {
 }
 
 export async function getTodaysOrderCount() {
+  await verifyAdminAuth();
   const supabase = getAdminClient();
 
   const today = new Date().toISOString().split("T")[0];
@@ -301,27 +386,35 @@ export async function getTodaysOrderCount() {
 }
 
 export async function createOrder(formData: FormData) {
+  await verifyAdminAuth();
   const supabase = getAdminClient();
 
-  const customer_name = formData.get("customer_name") as string;
-  const customer_phone = formData.get("customer_phone") as string;
-  const customer_email = formData.get("customer_email") as string;
+  const customer_name = (formData.get("customer_name") as string || "").trim();
+  if (!customer_name) throw new Error("Customer name is required.");
+  const customer_phone = (formData.get("customer_phone") as string || "").trim();
+  if (!customer_phone) throw new Error("Customer phone is required.");
+  const customer_email = (formData.get("customer_email") as string || "").trim();
+  const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (customer_email && !validEmail.test(customer_email)) {
+    throw new Error("Invalid email format.");
+  }
   let items: Json = [];
   try { const parsed = JSON.parse(formData.get("items") as string); if (Array.isArray(parsed)) items = parsed as Json; } catch { items = []; }
-  const subtotal = parseInt(formData.get("subtotal") as string) || 0;
-  const delivery_fee = parseInt(formData.get("delivery_fee") as string) || 0;
-  const total = parseInt(formData.get("total") as string) || 0;
-  const mpesa_reference = (formData.get("mpesa_reference") as string || "").toUpperCase();
+  const subtotal = Math.max(0, parseInt(formData.get("subtotal") as string) || 0);
+  const delivery_fee = Math.max(0, parseInt(formData.get("delivery_fee") as string) || 0);
+  const total = Math.max(0, parseInt(formData.get("total") as string) || 0);
+  if (total <= 0) throw new Error("Total must be greater than 0.");
+  const mpesa_reference = (formData.get("mpesa_reference") as string || "").toUpperCase().trim();
+  if (!mpesa_reference) throw new Error("M-Pesa reference is required.");
   const vendor_id = formData.get("vendor_id") as string || null;
-  const notes = formData.get("notes") as string || null;
+  const notes = (formData.get("notes") as string || "").trim() || null;
 
-  // Generate receipt number with timestamp + random suffix to avoid race conditions
   const now = new Date();
   const yyyy = now.getFullYear().toString();
   const mm = (now.getMonth() + 1).toString().padStart(2, "0");
   const dd = now.getDate().toString().padStart(2, "0");
   const dateStr = `${yyyy}${mm}${dd}`;
-  const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
+  const rand = crypto.randomUUID().slice(0, 4).toUpperCase();
   const receipt_number = `TRV-${dateStr}-${rand}`;
 
   const { error } = await supabase.from("admin_orders").insert({
@@ -344,7 +437,13 @@ export async function createOrder(formData: FormData) {
 }
 
 export async function updateOrderStatus(orderId: string, status: string) {
+  await verifyAdminAuth();
   const supabase = getAdminClient();
+
+  const validStatuses = ["confirmed", "dispatched", "delivered", "refunded"];
+  if (!validStatuses.includes(status)) {
+    throw new Error("Invalid order status.");
+  }
 
   const { error } = await supabase
     .from("admin_orders")
@@ -355,6 +454,7 @@ export async function updateOrderStatus(orderId: string, status: string) {
 }
 
 export async function deleteOrder(orderId: string) {
+  await verifyAdminAuth();
   const supabase = getAdminClient();
 
   const { error } = await supabase
@@ -366,6 +466,7 @@ export async function deleteOrder(orderId: string) {
 }
 
 export async function getVendors() {
+  await verifyAdminAuth();
   const supabase = getAdminClient();
 
   const { data, error } = await supabase
@@ -378,14 +479,17 @@ export async function getVendors() {
 }
 
 export async function createVendor(formData: FormData) {
+  await verifyAdminAuth();
   const supabase = getAdminClient();
 
-  const name = formData.get("name") as string;
-  const email = formData.get("email") as string;
-  const phone = formData.get("phone") as string;
-  const business_name = formData.get("business_name") as string;
+  const name = (formData.get("name") as string || "").trim();
+  if (!name) throw new Error("Vendor name is required.");
+  const email = (formData.get("email") as string || "").trim();
+  const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!email || !validEmail.test(email)) throw new Error("Valid email is required.");
+  const phone = (formData.get("phone") as string || "").trim();
+  const business_name = (formData.get("business_name") as string || "").trim();
 
-  // Insert into vendors table
   const { error: vendorError } = await supabase.from("vendors").insert({
     name,
     email,
@@ -395,7 +499,6 @@ export async function createVendor(formData: FormData) {
 
   if (vendorError) throw new Error(vendorError.message);
 
-  // Create auth user via Supabase Admin API
   const { error: authError } = await supabase.auth.admin.inviteUserByEmail(email, {
     data: { role: "vendor" },
   });
@@ -404,11 +507,12 @@ export async function createVendor(formData: FormData) {
 }
 
 export async function updateVendor(id: string, formData: FormData) {
+  await verifyAdminAuth();
   const supabase = getAdminClient();
 
-  const name = formData.get("name") as string;
-  const phone = formData.get("phone") as string;
-  const business_name = formData.get("business_name") as string;
+  const name = (formData.get("name") as string || "").trim();
+  const phone = (formData.get("phone") as string || "").trim();
+  const business_name = (formData.get("business_name") as string || "").trim();
   const status = formData.get("status") as string;
 
   const { error } = await supabase
@@ -425,14 +529,19 @@ export async function updateVendor(id: string, formData: FormData) {
 }
 
 export async function createBlogPost(formData: FormData) {
+  await verifyAdminAuth();
   const supabase = getAdminClient();
-  const title = formData.get("title") as string;
-  const slug = formData.get("slug") as string;
-  const content = formData.get("content") as string;
-  const excerpt = formData.get("excerpt") as string;
-  const cover_image_url = formData.get("cover_image_url") as string;
-  const seo_title = formData.get("seo_title") as string;
-  const seo_description = formData.get("seo_description") as string;
+  const title = (formData.get("title") as string || "").trim();
+  if (!title) throw new Error("Blog post title is required.");
+  if (title.length > 200) throw new Error("Title must be 200 characters or less.");
+  const slug = (formData.get("slug") as string || "").trim();
+  if (!slug) throw new Error("Slug is required.");
+  const content = DOMPurify.sanitize(formData.get("content") as string || "");
+  if (!content) throw new Error("Content is required.");
+  const excerpt = (formData.get("excerpt") as string || "").trim();
+  const cover_image_url = (formData.get("cover_image_url") as string || "").trim();
+  const seo_title = (formData.get("seo_title") as string || "").trim();
+  const seo_description = (formData.get("seo_description") as string || "").trim();
   const related_product_ids = formData.get("related_product_ids") as string;
   const published_at = formData.get("published_at") as string;
 
@@ -456,14 +565,19 @@ export async function createBlogPost(formData: FormData) {
 }
 
 export async function updateBlogPost(id: string, formData: FormData) {
+  await verifyAdminAuth();
   const supabase = getAdminClient();
-  const title = formData.get("title") as string;
-  const slug = formData.get("slug") as string;
-  const content = formData.get("content") as string;
-  const excerpt = formData.get("excerpt") as string;
-  const cover_image_url = formData.get("cover_image_url") as string;
-  const seo_title = formData.get("seo_title") as string;
-  const seo_description = formData.get("seo_description") as string;
+  const title = (formData.get("title") as string || "").trim();
+  if (!title) throw new Error("Blog post title is required.");
+  if (title.length > 200) throw new Error("Title must be 200 characters or less.");
+  const slug = (formData.get("slug") as string || "").trim();
+  if (!slug) throw new Error("Slug is required.");
+  const content = DOMPurify.sanitize(formData.get("content") as string || "");
+  if (!content) throw new Error("Content is required.");
+  const excerpt = (formData.get("excerpt") as string || "").trim();
+  const cover_image_url = (formData.get("cover_image_url") as string || "").trim();
+  const seo_title = (formData.get("seo_title") as string || "").trim();
+  const seo_description = (formData.get("seo_description") as string || "").trim();
   const related_product_ids = formData.get("related_product_ids") as string;
   const published_at = formData.get("published_at") as string;
 
@@ -490,6 +604,7 @@ export async function updateBlogPost(id: string, formData: FormData) {
 }
 
 export async function deleteBlogPost(id: string) {
+  await verifyAdminAuth();
   const supabase = getAdminClient();
   const { error } = await supabase.from("blog_posts").delete().eq("id", id);
   if (error) throw new Error(error.message);
@@ -507,6 +622,7 @@ export async function getBlogPosts() {
 }
 
 export async function deleteVendor(id: string) {
+  await verifyAdminAuth();
   const supabase = getAdminClient();
 
   const { error } = await supabase.from("vendors").delete().eq("id", id);

@@ -11,6 +11,15 @@ export async function middleware(request: NextRequest) {
     },
   });
 
+  // Security headers
+  response.headers.set("X-Frame-Options", "DENY");
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  response.headers.set(
+    "Content-Security-Policy",
+    "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://hcaptcha.com https://*.hcaptcha.com; style-src 'self' 'unsafe-inline' https://hcaptcha.com https://*.hcaptcha.com; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://openrouter.ai https://hcaptcha.com https://*.hcaptcha.com; frame-src 'self' https://hcaptcha.com https://*.hcaptcha.com; object-src 'none'; base-uri 'self'; form-action 'self'"
+  );
+
   // Pass pathname to server components via custom header
   response.headers.set("x-next-url", request.nextUrl.pathname);
 
@@ -63,8 +72,11 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Normalize pathname to prevent trailing slash bypass
+  const pathname = request.nextUrl.pathname.replace(/\/$/, "") || "/";
+
   // Protect all /admin routes except /admin/login
-  if (request.nextUrl.pathname.startsWith("/admin") && !request.nextUrl.pathname.startsWith("/admin/login")) {
+  if (pathname.startsWith("/admin") && !pathname.startsWith("/admin/login")) {
     if (!user) {
       return NextResponse.redirect(new URL("/admin/login", request.url));
     }
@@ -82,7 +94,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Redirect /admin/login to /admin if already logged in
-  if (request.nextUrl.pathname === "/admin/login" && user) {
+  if (pathname === "/admin/login" && user) {
     // Check if user is actually an admin
     const { data: adminUser } = await supabase
       .from("admin_users")
@@ -96,14 +108,14 @@ export async function middleware(request: NextRequest) {
   }
 
   // Protect all /vendor routes except /vendor itself (login page)
-  if (request.nextUrl.pathname.startsWith("/vendor/dashboard")) {
+  if (pathname.startsWith("/vendor/dashboard")) {
     if (!user) {
       return NextResponse.redirect(new URL("/vendor", request.url));
     }
   }
 
   // Redirect /vendor to /vendor/dashboard if already logged in AS A VENDOR
-  if (request.nextUrl.pathname === "/vendor" && user) {
+  if (pathname === "/vendor" && user) {
     const { data: vendor } = await supabase
       .from("vendors")
       .select("id")
@@ -116,7 +128,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Protect /account routes - redirect to login if not authenticated
-  if (request.nextUrl.pathname.startsWith("/account")) {
+  if (pathname.startsWith("/account")) {
     if (!user) {
       return NextResponse.redirect(new URL("/auth/login", request.url));
     }

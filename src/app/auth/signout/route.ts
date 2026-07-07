@@ -9,7 +9,13 @@ export async function POST(request: Request) {
 
   // Get redirect from form data or default to /auth/login
   const formData = await request.formData().catch(() => null);
-  const redirectTo = formData?.get("redirect")?.toString() || "/auth/login";
+  let redirectTo = formData?.get("redirect")?.toString() || "/auth/login";
+
+  // Validate redirect against allowlist to prevent open redirect
+  const allowedRedirects = ["/auth/login", "/admin/login", "/vendor", "/account"];
+  if (!allowedRedirects.includes(redirectTo)) {
+    redirectTo = "/auth/login";
+  }
 
   return NextResponse.redirect(new URL(redirectTo, SITE_URL));
 }

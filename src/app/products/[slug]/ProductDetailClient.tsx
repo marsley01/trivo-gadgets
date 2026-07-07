@@ -358,7 +358,12 @@ export default function ProductDetailClient({
 function ReviewRating({ productId }: { productId: string }) {
   const [reviews, setReviews] = useState<{ rating: number }[]>([]);
   useEffect(() => {
-    import("@/lib/reviews").then((m) => setReviews(m.getReviews(productId)));
+    let cancelled = false;
+    import("@/lib/reviews").then((m) => {
+      if (cancelled) return;
+      setReviews(m.getReviews(productId));
+    });
+    return () => { cancelled = true; };
   }, [productId]);
   const avg = reviews.length > 0
     ? Math.round((reviews.reduce((a, r) => a + r.rating, 0) / reviews.length) * 10) / 10

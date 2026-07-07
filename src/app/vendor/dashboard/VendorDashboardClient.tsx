@@ -53,7 +53,13 @@ export default function VendorDashboardClient({ vendor }: { vendor: Vendor }) {
     setLoading(false);
   }, [vendor.id, addToast]);
 
-  useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => {
+    let cancelled = false;
+    refresh().then(() => {
+      if (cancelled) return;
+    });
+    return () => { cancelled = true; };
+  }, [refresh]);
 
   const totalStock = products.reduce((sum, p) => sum + (p.stock || 0), 0);
   const revenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);

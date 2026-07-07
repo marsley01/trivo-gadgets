@@ -5,7 +5,11 @@ import { NextResponse, type NextRequest } from "next/server";
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/account";
+  let next = searchParams.get("next") ?? "/account";
+  const allowedPaths = ["/account", "/admin", "/vendor/dashboard", "/orders", "/wishlist"];
+  if (next.includes(":") || next.startsWith("//") || !next.startsWith("/") || (next.length > 1 && !allowedPaths.some(p => next.startsWith(p)))) {
+    next = "/account";
+  }
 
   if (code) {
     const setCookies: { name: string; value: string; options?: Record<string, unknown> }[] = [];

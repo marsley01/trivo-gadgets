@@ -14,6 +14,12 @@ export const metadata: Metadata = {
     title: "Trivo Kenya | Premium Tech Gadgets",
     description: "Get exclusive premium tech gadgets, smart home devices, and accessories in Kenya. Free delivery in Nairobi.",
     url: "https://trivokenya.store",
+    siteName: "Trivo Kenya",
+    locale: "en_KE",
+    images: [{ url: "https://trivokenya.store/og-image.jpg", width: 1200, height: 630 }],
+  },
+  alternates: {
+    canonical: "https://trivokenya.store",
   },
 };
 

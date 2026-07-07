@@ -1,9 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "All Products | Tech Gadgets",
+  title: "All Products",
   description: "Browse the full catalog of premium tech gadgets, smart home devices, and accessories available at Trivo Kenya. Free delivery in Nairobi.",
   openGraph: {
     title: "All Products | Trivo Kenya",
@@ -12,6 +13,10 @@ export const metadata: Metadata = {
     siteName: "Trivo Kenya",
     locale: "en_KE",
     type: "website",
+    images: [{ url: "https://trivokenya.store/og-image.jpg", width: 1200, height: 630 }],
+  },
+  alternates: {
+    canonical: "https://trivokenya.store/products",
   },
 };
 
@@ -38,11 +43,13 @@ export default async function ProductsPage() {
           >
             {product.image_url && (
               <div className="relative aspect-square mb-3 overflow-hidden rounded-lg bg-surface">
-                <img
+                <Image
                   src={product.image_url}
                   alt={product.name}
-                  className="h-full w-full object-cover group-hover:scale-105 transition-transform"
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform"
                   loading="lazy"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 33vw, 25vw"
                 />
               </div>
             )}

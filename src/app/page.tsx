@@ -8,7 +8,6 @@ import type { Metadata } from "next";
 export const revalidate = 60;
 
 export const metadata: Metadata = {
-  title: "Trivo Kenya | Premium Tech Gadgets",
   description: "Get exclusive premium tech gadgets, smart home devices, and accessories in Kenya. Free delivery in Nairobi. Shop the latest drops.",
   openGraph: {
     title: "Trivo Kenya | Premium Tech Gadgets",

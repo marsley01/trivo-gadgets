@@ -27,6 +27,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }))
 
+  const categorySlugs = ["audio", "car-accessories", "smart-home", "cables", "lighting"]
+  const categoryUrls: MetadataRoute.Sitemap = categorySlugs.map((slug) => ({
+    url: `https://trivokenya.store/categories/${slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'weekly',
+    priority: 0.8,
+  }))
+
   return [
     {
       url: 'https://trivokenya.store',
@@ -56,13 +64,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: 'https://trivokenya.store/about',
       lastModified: new Date(),
       changeFrequency: 'monthly',
-      priority: 0.5,
-    },
-    {
-      url: 'https://trivokenya.store/contact',
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.5,
+      priority: 0.6,
     },
     {
       url: 'https://trivokenya.store/delivery',
@@ -74,13 +76,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: 'https://trivokenya.store/faq',
       lastModified: new Date(),
       changeFrequency: 'monthly',
-      priority: 0.5,
+      priority: 0.6,
     },
     {
       url: 'https://trivokenya.store/returns',
       lastModified: new Date(),
       changeFrequency: 'monthly',
-      priority: 0.5,
+      priority: 0.6,
     },
     {
       url: 'https://trivokenya.store/reviews',
@@ -88,6 +90,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'weekly',
       priority: 0.6,
     },
+    {
+      url: 'https://trivokenya.store/terms',
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.4,
+    },
+    {
+      url: 'https://trivokenya.store/privacy',
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.4,
+    },
+    ...categoryUrls,
     ...productUrls,
     ...blogPostUrls,
   ]

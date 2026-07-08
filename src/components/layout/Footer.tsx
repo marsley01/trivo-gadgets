@@ -136,8 +136,8 @@ export default function Footer() {
         <div className="border-t border-subtle pt-8 text-center text-[11px] text-muted-foreground flex flex-col sm:flex-row items-center justify-between gap-4">
           <p>&copy; {new Date().getFullYear()} Trivo Kenya. All rights reserved.</p>
           <div className="flex gap-4">
-            <Link href="/" className="hover:underline">Terms of Service</Link>
-            <Link href="/" className="hover:underline">Privacy Policy</Link>
+            <Link href="/terms" className="hover:underline">Terms of Service</Link>
+            <Link href="/privacy" className="hover:underline">Privacy Policy</Link>
           </div>
         </div>
       </div>

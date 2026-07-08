@@ -12,22 +12,26 @@ export default function ReviewsSection({ productId, productName }: { productId: 
   const [rating, setRating] = useState(5);
   const [text, setText] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    setReviews(getReviews(productId));
-    setAvgRating(getAverageRating(productId));
+    getReviews(productId).then(setReviews);
+    getAverageRating(productId).then(setAvgRating);
   }, [productId]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !text.trim()) return;
-    addReview({ product_id: productId, customer_name: name, rating, text });
-    setReviews(getReviews(productId));
-    setAvgRating(getAverageRating(productId));
+    setSubmitting(true);
+    await addReview({ product_id: productId, customer_name: name, rating, text });
+    const updated = await getReviews(productId);
+    setReviews(updated);
+    setAvgRating(await getAverageRating(productId));
     setName("");
     setRating(5);
     setText("");
     setShowForm(false);
+    setSubmitting(false);
     setSubmitted(true);
     setTimeout(() => setSubmitted(false), 3000);
   };
@@ -113,9 +117,10 @@ export default function ReviewsSection({ productId, productName }: { productId: 
             </button>
             <button
               type="submit"
-              className="rounded-full bg-accent text-black px-5 py-2 text-xs font-bold transition-all hover:scale-105 active:scale-95"
+              disabled={submitting}
+              className="rounded-full bg-accent text-black px-5 py-2 text-xs font-bold transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
             >
-              Submit Review
+              {submitting ? "Submitting..." : "Submit Review"}
             </button>
           </div>
         </form>

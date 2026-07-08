@@ -58,6 +58,12 @@ export const metadata: Metadata = {
     google: "bRywbYsy_4fiLkqmp71IbeHcPh-MGfZ1d5Tlot-5mJw",
   },
   keywords: ["premium tech gadgets Kenya", "smart home devices Kenya", "tech accessories Kenya", "Trivo Kenya", "online gadget store Kenya"],
+  alternates: {
+    canonical: siteUrl,
+    languages: {
+      "en-KE": siteUrl,
+    },
+  },
 };
 
 export default function RootLayout({
@@ -94,13 +100,66 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
-              "@type": "Store",
+              "@type": "LocalBusiness",
               name: siteName,
               url: siteUrl,
               description: siteDescription,
-              image: `${siteUrl}/icons/icon-512x512.svg`,
-              address: { "@type": "PostalAddress", addressCountry: "KE" },
+              image: `${siteUrl}/logo-transparent.svg`,
+              telephone: "+254757512769",
+              email: "hello@trivokenya.store",
+              address: {
+                "@type": "PostalAddress",
+                addressLocality: "Nairobi",
+                addressCountry: "KE",
+              },
+              areaServed: ["Nairobi", "Mombasa", "Kisumu", "Eldoret", "Nakuru", "Thika"],
               priceRange: "KES 500 - KES 500,000",
+              openingHours: "Mo-Su 08:00-20:00",
+              sameAs: [
+                "https://instagram.com/trivokenya",
+                "https://tiktok.com/@trivokenya",
+                "https://x.com/trivokenya",
+                "https://youtube.com/@trivokenya",
+                `https://wa.me/${WHATSAPP_NUMBER}`,
+              ],
+            }),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              name: siteName,
+              url: siteUrl,
+              logo: `${siteUrl}/logo-transparent.svg`,
+              sameAs: [
+                "https://instagram.com/trivokenya",
+                "https://tiktok.com/@trivokenya",
+                "https://x.com/trivokenya",
+                "https://youtube.com/@trivokenya",
+                `https://wa.me/${WHATSAPP_NUMBER}`,
+              ],
+            }),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              name: siteName,
+              url: siteUrl,
+              potentialAction: {
+                "@type": "SearchAction",
+                target: {
+                  "@type": "EntryPoint",
+                  urlTemplate: `${siteUrl}/search?q={search_term_string}`,
+                },
+                "query-input": "required name=search_term_string",
+              },
             }),
           }}
         />

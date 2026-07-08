@@ -7,13 +7,25 @@ import Link from "next/link";
 import { ChevronRight, Sparkles, AudioLines, ShieldAlert, Cpu, Cable, Car } from "lucide-react";
 import type { Metadata } from "next";
 
+const siteName = "Trivo Kenya";
 export const revalidate = 60;
 
 export async function generateMetadata({ params }: { params: { category: string } }): Promise<Metadata> {
   const categoryName = getCategoryName(params.category);
   return {
-    title: `${categoryName} | Genuine Gadgets | Trivo Kenya`,
-    description: `Shop original ${categoryName} at Trivo Kenya. Free Nairobi delivery (1 to 2 days) and secure payment on delivery.`,
+    title: `${categoryName} — ${siteName}`,
+    description: `Shop original ${categoryName} at Trivo Kenya. Free Nairobi delivery within 1 to 2 days and secure payment on delivery. Genuine tech, best prices.`,
+    alternates: {
+      canonical: `https://trivokenya.store/categories/${params.category}`,
+    },
+    openGraph: {
+      title: `${categoryName} | ${siteName}`,
+      description: `Shop original ${categoryName} at Trivo Kenya. Free Nairobi delivery.`,
+      url: `https://trivokenya.store/categories/${params.category}`,
+      siteName,
+      locale: "en_KE",
+      type: "website",
+    },
   };
 }
 
@@ -98,8 +110,36 @@ export default async function CategoryPage({ params }: { params: { category: str
     return notFound();
   }
 
+  const categoryBreadcrumb = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://trivokenya.store" },
+      { "@type": "ListItem", position: 2, name: "Categories", item: "https://trivokenya.store/products" },
+      { "@type": "ListItem", position: 3, name: getCategoryName(params.category) },
+    ],
+  };
+
+  const collectionSchema = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: `${getCategoryName(params.category)} | Trivo Kenya`,
+    description: `Shop original ${getCategoryName(params.category)} at Trivo Kenya. Free Nairobi delivery.`,
+    url: `https://trivokenya.store/categories/${params.category}`,
+    mainEntity: {
+      "@type": "ItemList",
+      itemListElement: products.map((p, i) => ({
+        "@type": "ListItem",
+        position: i + 1,
+        url: `https://trivokenya.store/products/${p.slug}`,
+      })),
+    },
+  };
+
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(categoryBreadcrumb) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionSchema) }} />
       <Navbar />
       <main className="min-h-screen bg-background text-foreground overflow-hidden relative pb-24">
         <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[450px] rounded-full blur-[160px] pointer-events-none ${details.glowColor}`} />

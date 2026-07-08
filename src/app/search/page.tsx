@@ -10,6 +10,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Search Products | Trivo Kenya",
   description: "Search our catalog of premium tech gadgets in Kenya.",
+  robots: { index: false, follow: true },
 };
 
 export default async function SearchPage({

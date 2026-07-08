@@ -361,7 +361,9 @@ function ReviewRating({ productId }: { productId: string }) {
     let cancelled = false;
     import("@/lib/reviews").then((m) => {
       if (cancelled) return;
-      setReviews(m.getReviews(productId));
+      m.getReviews(productId).then((r: { rating: number }[]) => {
+        if (!cancelled) setReviews(r);
+      });
     });
     return () => { cancelled = true; };
   }, [productId]);

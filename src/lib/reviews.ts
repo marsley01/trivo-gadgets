@@ -7,33 +7,26 @@ export type Review = {
   created_at: string;
 };
 
-const STORAGE_KEY = "trivo_reviews";
-
-export function getReviews(productId?: string): Review[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    const all: Review[] = data ? JSON.parse(data) : [];
-    return productId ? all.filter((r) => r.product_id === productId) : all;
-  } catch {
-    return [];
+export async function getReviews(productId?: string): Promise<Review[]> {
+  const { createClient } = await import("@/lib/supabase/client");
+  const supabase = createClient();
+  let query = supabase.from("reviews").select("*").order("created_at", { ascending: false });
+  if (productId) {
+    query = query.eq("product_id", productId);
   }
+  const { data } = await query;
+  return (data as Review[]) || [];
 }
 
-export function addReview(review: Omit<Review, "id" | "created_at">): Review {
-  const newReview: Review = {
-    ...review,
-    id: crypto.randomUUID(),
-    created_at: new Date().toISOString(),
-  };
-  const all = getReviews();
-  all.unshift(newReview);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
-  return newReview;
+export async function addReview(review: Omit<Review, "id" | "created_at">): Promise<Review | null> {
+  const { createClient } = await import("@/lib/supabase/client");
+  const supabase = createClient();
+  const { data } = await supabase.from("reviews").insert(review).select().single();
+  return data as Review | null;
 }
 
-export function getAverageRating(productId: string): number {
-  const reviews = getReviews(productId);
+export async function getAverageRating(productId: string): Promise<number> {
+  const reviews = await getReviews(productId);
   if (reviews.length === 0) return 0;
   const sum = reviews.reduce((acc, r) => acc + r.rating, 0);
   return Math.round((sum / reviews.length) * 10) / 10;

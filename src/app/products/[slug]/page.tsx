@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createClient as createStaticClient } from "@supabase/supabase-js";
 import type { Metadata } from "next";
 import ProductDetailClient from "./ProductDetailClient";
+import { getServerReviews } from "@/lib/reviews.server";
 
 export async function generateStaticParams() {
   // Guard: if env vars aren't present (e.g. CI build without .env.local),
@@ -56,7 +57,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       images: product.image_url ? [product.image_url] : [],
     },
     alternates: {
-      canonical: `/products/${product.slug}`,
+      canonical: `https://trivokenya.store/products/${product.slug}`,
     },
   };
 }
@@ -77,39 +78,91 @@ export default async function ProductPage({ params }: Props) {
     .neq("id", product.id)
     .limit(4);
 
+  const reviews = await getServerReviews(product.id);
+  const avgRating = reviews.length > 0
+    ? Math.round((reviews.reduce((a, r) => a + r.rating, 0) / reviews.length) * 10) / 10
+    : 0;
+
+  const productSchema: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: product.long_description || product.description || `Premium ${product.category || "tech"} product available at Trivo Kenya`,
+    image: product.image_url || undefined,
+    category: product.category || "Electronics",
+    sku: product.id,
+    keywords: (product.tags as string[])?.join(", ") || undefined,
+    brand: {
+      "@type": "Brand",
+      name: product.brand || "Trivo Kenya",
+    },
+    offers: {
+      "@type": "Offer",
+      price: product.price,
+      priceCurrency: "KES",
+      availability: product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      url: `https://trivokenya.store/products/${product.slug}`,
+      seller: {
+        "@type": "Organization",
+        name: "Trivo Kenya",
+        url: "https://trivokenya.store",
+      },
+      priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      itemCondition: "https://schema.org/NewCondition",
+    },
+    merchantReturnPolicy: {
+      "@type": "MerchantReturnPolicy",
+      applicableCountry: "KE",
+      returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
+      merchantReturnDays: 7,
+      returnMethod: "https://schema.org/ReturnByMail",
+      returnFees: "https://schema.org/FreeReturn",
+    },
+    shippingDetails: {
+      "@type": "OfferShippingDetails",
+      shippingDestination: {
+        "@type": "DefinedRegion",
+        addressCountry: "KE",
+      },
+      deliveryTime: {
+        "@type": "ShippingDeliveryTime",
+        handlingTime: {
+          "@type": "QuantitativeValue",
+          minValue: 0,
+          maxValue: 1,
+          unitCode: "DAY",
+        },
+        transitTime: {
+          "@type": "QuantitativeValue",
+          minValue: 1,
+          maxValue: 3,
+          unitCode: "DAY",
+        },
+      },
+      shippingRate: {
+        "@type": "MonetaryAmount",
+        value: 0,
+        currency: "KES",
+      },
+    },
+  };
+
+  if (reviews.length > 0) {
+    productSchema.aggregateRating = {
+      "@type": "AggregateRating",
+      ratingValue: avgRating,
+      reviewCount: reviews.length,
+      bestRating: 5,
+      worstRating: 1,
+    };
+  }
+
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "Product",
-            name: product.name,
-            description: product.long_description || product.description || `Premium ${product.category || "tech"} product available at Trivo Kenya`,
-            image: product.image_url || undefined,
-            category: product.category || "Electronics",
-            sku: product.id,
-            keywords: (product.tags as string[])?.join(", ") || undefined,
-            brand: {
-              "@type": "Brand",
-              name: product.brand || "Trivo Kenya",
-            },
-            offers: {
-              "@type": "Offer",
-              price: product.price,
-              priceCurrency: "KES",
-              availability: product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-              url: `https://trivokenya.store/products/${product.slug}`,
-              seller: {
-                "@type": "Organization",
-                name: "Trivo Kenya",
-                url: "https://trivokenya.store",
-              },
-              priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-              itemCondition: "https://schema.org/NewCondition",
-            },
-          }),
+          __html: JSON.stringify(productSchema),
         }}
       />
       <script

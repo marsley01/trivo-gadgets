@@ -11,7 +11,7 @@ export default function ReviewsPage() {
   const [reviews, setReviews] = useState<Review[]>([]);
 
   useEffect(() => {
-    setReviews(getReviews());
+    getReviews().then(setReviews);
   }, []);
 
   return (

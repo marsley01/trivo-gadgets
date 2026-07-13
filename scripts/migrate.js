@@ -141,7 +141,8 @@ After that, migrations run automatically on every deploy.`);
       const msg = error.message?.toLowerCase() || "";
       if (msg.includes("already exists") ||
           msg.includes("duplicate") ||
-          msg.includes("must be owner")) {
+          msg.includes("must be owner") ||
+          msg.includes("operator does not exist")) {
         skipped++;
       } else {
         console.log(`  ✗ ${stmt.slice(0, 70)}...`);

@@ -1,82 +1,36 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { CheckCircle2, AlertCircle, Sparkles, Bell } from "lucide-react";
-import Script from "next/script";
 import Image from "next/image";
-
-interface HCaptchaWindow {
-  onHCaptchaSuccess?: (token: string) => void;
-  onHCaptchaExpired?: () => void;
-  onHCaptchaError?: () => void;
-  hcaptcha?: {
-    reset: () => void;
-  };
-}
 
 export default function SubscribeSection() {
   const [email, setEmail] = useState("");
-  const [captchaToken, setCaptchaToken] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
-
-  useEffect(() => {
-    const w = window as unknown as HCaptchaWindow;
-    // Bind hCaptcha callbacks to global window
-    w.onHCaptchaSuccess = (token: string) => {
-      setCaptchaToken(token);
-    };
-    w.onHCaptchaExpired = () => {
-      setCaptchaToken("");
-    };
-    w.onHCaptchaError = () => {
-      setCaptchaToken("");
-    };
-
-    return () => {
-      delete w.onHCaptchaSuccess;
-      delete w.onHCaptchaExpired;
-      delete w.onHCaptchaError;
-    };
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
-    if (!captchaToken) {
-      setStatus("error");
-      setMessage("Please complete the captcha challenge.");
-      return;
-    }
 
     setStatus("loading");
-    
+
     try {
       const res = await fetch("/api/subscribers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, captchaToken }),
+        body: JSON.stringify({ email }),
       });
-      
+
       const data = await res.json();
-      const w = window as unknown as HCaptchaWindow;
-      
+
       if (res.ok) {
         setStatus("success");
         setMessage("You're in. Keep an eye on your inbox for premium drops.");
         setEmail("");
-        setCaptchaToken("");
-        // Reset the hCaptcha widget
-        if (w.hcaptcha) {
-          w.hcaptcha.reset();
-        }
       } else {
         setStatus("error");
         setMessage(data.error || "Something went wrong. Please try again.");
-        // Reset the hCaptcha widget
-        if (w.hcaptcha) {
-          w.hcaptcha.reset();
-        }
       }
     } catch {
       setStatus("error");
@@ -90,9 +44,9 @@ export default function SubscribeSection() {
         {/* Dynamic Background Glows */}
         <div className="absolute top-0 right-0 -mr-32 -mt-32 w-[500px] h-[500px] rounded-full bg-blue-600/20 blur-[140px] pointer-events-none" />
         <div className="absolute bottom-0 left-0 -ml-32 -mb-32 w-[500px] h-[500px] rounded-full bg-accent/15 blur-[140px] pointer-events-none" />
-        
+
         <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-12">
-          
+
           {/* Left Content */}
           <div className="flex-1 max-w-xl space-y-6 text-left">
             {/* VIP Sparkle Badge */}
@@ -139,25 +93,13 @@ export default function SubscribeSection() {
               </button>
             </form>
 
-            {/* hCaptcha Widget Container */}
-            <div className="pt-2">
-              <div
-                className="h-captcha"
-                data-sitekey={process.env.NEXT_PUBLIC_HCAPTCHA_SITEKEY || "a5a0d21c-04c8-4ffa-97a2-75cafa4e9672"}
-                data-callback="onHCaptchaSuccess"
-                data-expired-callback="onHCaptchaExpired"
-                data-error-callback="onHCaptchaError"
-                data-theme="dark"
-              />
-            </div>
-
             {status === "success" && (
               <div className="flex items-center gap-2 text-accent bg-accent/10 border border-accent/20 px-4 py-3 rounded-2xl text-sm font-medium w-fit backdrop-blur-md">
                 <CheckCircle2 className="h-4 w-4 shrink-0" />
                 {message}
               </div>
             )}
-            
+
             {status === "error" && (
               <div className="flex items-center gap-2 text-red-400 bg-red-500/10 border border-red-500/20 px-4 py-3 rounded-2xl text-sm font-medium w-fit backdrop-blur-md">
                 <AlertCircle className="h-4 w-4 shrink-0" />
@@ -180,7 +122,7 @@ export default function SubscribeSection() {
               {/* Inner glassmorphism glow */}
               <div className="absolute inset-0 bg-gradient-to-tr from-black/60 via-transparent to-white/10 pointer-events-none" />
             </div>
-            
+
             {/* Decorative floating elements */}
             <div className="absolute -bottom-6 -left-6 w-28 h-28 bg-accent/20 rounded-full blur-[35px] animate-pulse pointer-events-none" />
             <div className="absolute -top-6 -right-6 w-32 h-32 bg-blue-500/30 rounded-full blur-[40px] animate-pulse pointer-events-none" />
@@ -188,7 +130,6 @@ export default function SubscribeSection() {
 
         </div>
       </div>
-      <Script src="https://js.hcaptcha.com/1/api.js" async defer strategy="afterInteractive" />
     </section>
   );
 }

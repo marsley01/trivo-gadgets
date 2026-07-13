@@ -2,14 +2,11 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Script from "next/script";
 import { Mail, Lock, LogIn, Eye, EyeOff } from "lucide-react";
-
-const HCAPTCHA_SITEKEY = process.env.NEXT_PUBLIC_HCAPTCHA_SITEKEY || "a5a0d21c-04c8-4ffa-97a2-75cafa4e9672";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -17,48 +14,17 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [captchaToken, setCaptchaToken] = useState("");
-  const [captchaReady, setCaptchaReady] = useState(false);
-  const captchaRef = useRef<HTMLDivElement>(null);
-  const widgetIdRef = useRef<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
-
-  useEffect(() => {
-    const checkCaptcha = setInterval(() => {
-      const w = window as unknown as { hcaptcha?: { render: (el: string | HTMLElement, opts: Record<string, unknown>) => string } };
-      if (w.hcaptcha && captchaRef.current && !widgetIdRef.current) {
-        try {
-          const id = w.hcaptcha.render(captchaRef.current, {
-            sitekey: HCAPTCHA_SITEKEY,
-            theme: "dark",
-            callback: (token: string) => { setCaptchaToken(token); },
-            "expired-callback": () => { setCaptchaToken(""); },
-            "error-callback": () => { setCaptchaToken(""); },
-          });
-          widgetIdRef.current = id;
-          setCaptchaReady(true);
-        } catch { /* retry */ }
-        clearInterval(checkCaptcha);
-      }
-    }, 200);
-    setTimeout(() => clearInterval(checkCaptcha), 15000);
-    return () => clearInterval(checkCaptcha);
-  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    if (!captchaToken) {
-      setError("Please complete the captcha challenge.");
-      return;
-    }
-
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password, options: { captchaToken } });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
       if (error || !data.user) {
         setError(error?.message || "Login failed");
@@ -69,7 +35,6 @@ export default function LoginPage() {
       const user = data.user;
       const tenantId = user?.user_metadata?.tenant_id;
       
-      // Prevent cross-portal login: If they have a tenant_id, it must be 'customer'
       if (tenantId && tenantId !== "customer") {
         await supabase.auth.signOut();
         setError(`This account belongs to a ${tenantId}. Please use the correct portal to log in.`);
@@ -150,16 +115,6 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div className="flex justify-center my-4 min-h-[80px] items-center">
-              {!captchaReady ? (
-                <div className="flex flex-col items-center gap-2 text-xs text-muted-foreground">
-                  <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-                  Loading security check...
-                </div>
-              ) : null}
-              <div ref={captchaRef} />
-            </div>
-
             {error && (
               <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-2.5 text-sm text-red-400">
                 {error}
@@ -168,7 +123,7 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={loading || !captchaToken}
+              disabled={loading}
               className="w-full bg-accent text-black font-semibold rounded-lg py-2.5 text-sm flex items-center justify-center gap-2 hover:bg-accent/90 transition-all active:scale-[0.98] disabled:opacity-50"
             >
               {loading ? (
@@ -188,29 +143,6 @@ export default function LoginPage() {
           </p>
         </div>
       </div>
-      <Script
-        src="https://js.hcaptcha.com/1/api.js?render=explicit"
-        async
-        defer
-        strategy="lazyOnload"
-        onLoad={() => {
-          const w = window as unknown as { hcaptcha?: { render: (el: string | HTMLElement, opts: Record<string, unknown>) => string } };
-          if (w.hcaptcha && captchaRef.current && !widgetIdRef.current) {
-            try {
-              const id = w.hcaptcha.render(captchaRef.current, {
-                sitekey: HCAPTCHA_SITEKEY,
-                theme: "dark",
-                callback: (token: string) => { setCaptchaToken(token); },
-                "expired-callback": () => { setCaptchaToken(""); },
-                "error-callback": () => { setCaptchaToken(""); },
-              });
-              widgetIdRef.current = id;
-              setCaptchaReady(true);
-            } catch { /* ignore */ }
-          }
-        }}
-      />
     </div>
   );
 }
-

@@ -367,13 +367,13 @@ CREATE POLICY "Authenticated insert" ON storage.objects FOR INSERT TO authentica
 DROP POLICY IF EXISTS "Authenticated update" ON storage.objects;
 CREATE POLICY "Authenticated update own" ON storage.objects
   FOR UPDATE TO authenticated
-  USING (bucket_id = 'product-images' AND owner_id = auth.uid())
-  WITH CHECK (bucket_id = 'product-images' AND owner_id = auth.uid());
+  USING (bucket_id = 'product-images' AND owner_id = auth.uid()::uuid)
+  WITH CHECK (bucket_id = 'product-images' AND owner_id = auth.uid()::uuid);
 
 DROP POLICY IF EXISTS "Authenticated delete" ON storage.objects;
 CREATE POLICY "Authenticated delete own" ON storage.objects
   FOR DELETE TO authenticated
-  USING (bucket_id = 'product-images' AND owner_id = auth.uid());
+  USING (bucket_id = 'product-images' AND owner_id = auth.uid()::uuid);
 
 -- ==============================================================================
 -- SLUG MIGRATION

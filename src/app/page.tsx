@@ -23,7 +23,7 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: products } = await supabase
     .from("products")

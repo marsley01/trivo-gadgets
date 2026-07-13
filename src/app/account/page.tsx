@@ -6,7 +6,7 @@ import { Package, User, Bell, LogOut, ShoppingBag, Clock, Heart, MapPin, Edit3, 
 import { format } from "date-fns";
 
 export default async function AccountPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user?.id) redirect("/auth/login");

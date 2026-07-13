@@ -40,9 +40,10 @@ function formatDate(dateStr: string) {
 export default async function ReceiptPage({
   params,
 }: {
-  params: { receipt_number: string };
+  params: Promise<{ receipt_number: string }>;
 }) {
-  const order = await getOrder(params.receipt_number);
+  const { receipt_number } = await params;
+  const order = await getOrder(receipt_number);
 
   if (!order) {
     notFound();

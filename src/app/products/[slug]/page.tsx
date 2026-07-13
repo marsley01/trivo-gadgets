@@ -19,14 +19,15 @@ export async function generateStaticParams() {
   return (products || []).map((p) => ({ slug: p.slug }));
 }
 
-type Props = { params: { slug: string } };
+type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const supabase = createClient();
+  const { slug } = await params;
+  const supabase = await createClient();
   const { data: product } = await supabase
     .from("products")
     .select("*")
-    .eq("slug", params.slug)
+    .eq("slug", slug)
     .single();
 
   if (!product) return { title: "Product Not Found | Trivo Kenya" };
@@ -63,11 +64,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ProductPage({ params }: Props) {
-  const supabase = createClient();
+  const { slug } = await params;
+  const supabase = await createClient();
   const { data: product } = await supabase
     .from("products")
     .select("*")
-    .eq("slug", params.slug)
+    .eq("slug", slug)
     .single();
 
   if (!product) notFound();

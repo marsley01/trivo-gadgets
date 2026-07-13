@@ -5,7 +5,7 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "giedhzkjhmtmvqbuwfoh.supabase.co",
+        hostname: "nsfnhsfxqildfhqkssyo.supabase.co",
         pathname: "/storage/v1/object/public/**",
       },
       {
@@ -14,11 +14,9 @@ const nextConfig = {
       },
     ],
   },
-  experimental: {
-    outputFileTracingIncludes: {
-      "/admin/**": ["./node_modules/@img/sharp-libvips-linux-x64/**/*"],
-      "/vendor/**": ["./node_modules/@img/sharp-libvips-linux-x64/**/*"],
-    },
+  outputFileTracingIncludes: {
+    "/admin/**": ["./node_modules/@img/sharp-libvips-linux-x64/**/*"],
+    "/vendor/**": ["./node_modules/@img/sharp-libvips-linux-x64/**/*"],
   },
 };
 

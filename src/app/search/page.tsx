@@ -20,7 +20,7 @@ export default async function SearchPage({
 }) {
   const query = searchParams.q?.trim() || "";
 
-  const supabase = createClient();
+  const supabase = await createClient();
   let products: Database["public"]["Tables"]["products"]["Row"][] = [];
 
   if (query.length >= 2) {

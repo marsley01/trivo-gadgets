@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 };
 
 export default async function ProductsPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: products } = await supabase
     .from("products")
     .select("id, name, price, image_url, category, seo_description, description, slug")

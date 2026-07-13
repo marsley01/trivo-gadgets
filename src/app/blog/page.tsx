@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 };
 
 export default async function BlogPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: posts } = await supabase
     .from("blog_posts")
     .select("*")

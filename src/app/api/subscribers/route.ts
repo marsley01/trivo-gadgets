@@ -50,7 +50,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Captcha verification failed. Please try again." }, { status: 400 });
     }
 
-    const supabase = createClient();
+    const supabase = await createClient();
 
     const { error: dbError } = await supabase
       .from("subscribers")

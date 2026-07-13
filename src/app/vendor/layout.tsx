@@ -7,14 +7,14 @@ export default async function VendorLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const headersList = headers();
+  const headersList = await headers();
   const pathname = headersList.get("x-middleware-supabase-url") || "";
 
   // The /vendor page itself is the login page — skip auth check there.
   // We detect this by checking if we're NOT on a /vendor/dashboard or deeper path.
   // Next.js layouts nest, so /vendor/dashboard will hit this layout too.
   // We use cookies to read the URL from the request.
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   // If no user, only block /vendor/dashboard routes (not the /vendor login page itself)

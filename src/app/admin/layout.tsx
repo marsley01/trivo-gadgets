@@ -10,7 +10,7 @@ export default async function AdminLayout({
   // Read the current URL from the request headers to detect login page.
   // Next.js sets x-invoke-path, or we can read x-url / x-pathname from middleware.
   // As a reliable fallback we also check the referer and next-url headers.
-  const headersList = headers();
+  const headersList = await headers();
   const pathname =
     headersList.get("x-next-url") ||
     headersList.get("x-invoke-path") ||
@@ -23,7 +23,7 @@ export default async function AdminLayout({
   const isLoginPage = pathname.startsWith("/admin/login");
 
   if (!isLoginPage) {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user?.email) {

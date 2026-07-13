@@ -6,7 +6,7 @@ import { createClient as createStaticClient } from "@supabase/supabase-js";
 import { Calendar, ChevronRight, Clock } from "lucide-react";
 import type { Metadata } from "next";
 
-type Props = { params: { slug: string } };
+type Props = { params: Promise<{ slug: string }> };
 
 export async function generateStaticParams() {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
@@ -21,11 +21,12 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const supabase = createClient();
+  const { slug } = await params;
+  const supabase = await createClient();
   const { data: post } = await supabase
     .from("blog_posts")
     .select("*")
-    .eq("slug", params.slug)
+    .eq("slug", slug)
     .single();
 
   if (!post) return { title: "Post Not Found | Trivo Kenya" };
@@ -55,11 +56,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function BlogPostPage({ params }: Props) {
-  const supabase = createClient();
+  const { slug } = await params;
+  const supabase = await createClient();
   const { data: post } = await supabase
     .from("blog_posts")
     .select("*")
-    .eq("slug", params.slug)
+    .eq("slug", slug)
     .single();
 
   if (!post) notFound();

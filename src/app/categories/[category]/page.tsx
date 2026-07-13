@@ -10,18 +10,19 @@ import type { Metadata } from "next";
 const siteName = "Trivo Kenya";
 export const revalidate = 60;
 
-export async function generateMetadata({ params }: { params: { category: string } }): Promise<Metadata> {
-  const categoryName = getCategoryName(params.category);
+export async function generateMetadata({ params }: { params: Promise<{ category: string }> }): Promise<Metadata> {
+  const { category } = await params;
+  const categoryName = getCategoryName(category);
   return {
     title: `${categoryName} — ${siteName}`,
     description: `Shop original ${categoryName} at Trivo Kenya. Free Nairobi delivery within 1 to 2 days and secure payment on delivery. Genuine tech, best prices.`,
     alternates: {
-      canonical: `https://trivokenya.store/categories/${params.category}`,
+      canonical: `https://trivokenya.store/categories/${category}`,
     },
     openGraph: {
       title: `${categoryName} | ${siteName}`,
       description: `Shop original ${categoryName} at Trivo Kenya. Free Nairobi delivery.`,
-      url: `https://trivokenya.store/categories/${params.category}`,
+      url: `https://trivokenya.store/categories/${category}`,
       siteName,
       locale: "en_KE",
       type: "website",
@@ -94,10 +95,11 @@ function getCategoryDetails(slug: string) {
   }
 }
 
-export default async function CategoryPage({ params }: { params: { category: string } }) {
-  const supabase = createClient();
-  const dbCategory = getDbCategoryName(params.category);
-  const details = getCategoryDetails(params.category);
+export default async function CategoryPage({ params }: { params: Promise<{ category: string }> }) {
+  const { category } = await params;
+  const supabase = await createClient();
+  const dbCategory = getDbCategoryName(category);
+  const details = getCategoryDetails(category);
   const Icon = details.icon;
 
   const { data: products } = await supabase
@@ -116,16 +118,16 @@ export default async function CategoryPage({ params }: { params: { category: str
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "Home", item: "https://trivokenya.store" },
       { "@type": "ListItem", position: 2, name: "Categories", item: "https://trivokenya.store/products" },
-      { "@type": "ListItem", position: 3, name: getCategoryName(params.category) },
+      { "@type": "ListItem", position: 3, name: getCategoryName(category) },
     ],
   };
 
   const collectionSchema = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    name: `${getCategoryName(params.category)} | Trivo Kenya`,
-    description: `Shop original ${getCategoryName(params.category)} at Trivo Kenya. Free Nairobi delivery.`,
-    url: `https://trivokenya.store/categories/${params.category}`,
+    name: `${getCategoryName(category)} | Trivo Kenya`,
+    description: `Shop original ${getCategoryName(category)} at Trivo Kenya. Free Nairobi delivery.`,
+    url: `https://trivokenya.store/categories/${category}`,
     mainEntity: {
       "@type": "ItemList",
       itemListElement: products.map((p, i) => ({
@@ -150,7 +152,7 @@ export default async function CategoryPage({ params }: { params: { category: str
             <ChevronRight className="h-3 w-3" />
             <span className="text-foreground font-medium">Categories</span>
             <ChevronRight className="h-3 w-3" />
-            <span className="text-foreground font-medium">{getCategoryName(params.category)}</span>
+            <span className="text-foreground font-medium">{getCategoryName(category)}</span>
           </nav>
 
           <div className="p-8 md:p-12 rounded-3xl bg-card border border-subtle backdrop-blur-xl mb-16 relative overflow-hidden">

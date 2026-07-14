@@ -12,7 +12,7 @@ type Product = Database["public"]["Tables"]["products"]["Row"];
 export default function Hero({ product }: { product: Product | null }) {
   const [imgError, setImgError] = useState(false);
 
-  const heroImage = "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=1920&auto=format&fit=crop";
+  const heroImage = "/images/triyansh-gill-DYDIF2OuavM-unsplash.jpg";
 
   return (
     <section className="relative w-full overflow-hidden bg-neutral-950 font-sans" style={{ minHeight: "calc(100dvh - 64px)" }}>

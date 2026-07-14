@@ -38,7 +38,6 @@ export default function Home() {
   }, []);
 
   const featuredProduct = products.find((p) => p.is_featured) || products[0] || null;
-  const gridProducts = products.filter((p) => p.id !== featuredProduct?.id);
 
   return (
     <>
@@ -58,7 +57,7 @@ export default function Home() {
               <p className="text-muted-foreground text-sm">Unable to load products right now. Please refresh the page.</p>
             </section>
           ) : (
-            <ProductGrid products={gridProducts as never} />
+            <ProductGrid products={products as never} />
           )}
         </div>
       </main>

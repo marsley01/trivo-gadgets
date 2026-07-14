@@ -12,11 +12,10 @@ type Product = Database["public"]["Tables"]["products"]["Row"];
 export default function Hero({ product }: { product: Product | null }) {
   const [imgError, setImgError] = useState(false);
 
-  const heroImage = product?.image_url
-    || "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=1920&auto=format&fit=crop";
+  const heroImage = "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=1920&auto=format&fit=crop";
 
   return (
-    <section className="sticky top-0 h-screen w-full overflow-hidden bg-neutral-950 font-sans" style={{ zIndex: 1 }}>
+    <section className="relative w-full overflow-hidden bg-neutral-950 font-sans" style={{ minHeight: "calc(100dvh - 64px)" }}>
       <div className="absolute inset-0">
         {!imgError ? (
           <Image

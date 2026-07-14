@@ -1,48 +1,41 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import Hero from "@/components/home/Hero";
 import ProductGrid from "@/components/product/ProductGrid";
-import { createClient } from "@/lib/supabase/server";
-import type { Metadata } from "next";
+import { Package } from "lucide-react";
 
-export const dynamic = "force-dynamic";
+export default function Home() {
+  const [products, setProducts] = useState<Record<string, unknown>[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-export const metadata: Metadata = {
-  description: "Get exclusive premium tech gadgets, smart home devices, and accessories in Kenya. Free delivery in Nairobi. Shop the latest drops.",
-  openGraph: {
-    title: "Trivo Kenya | Premium Tech Gadgets",
-    description: "Get exclusive premium tech gadgets, smart home devices, and accessories in Kenya. Free delivery in Nairobi.",
-    url: "https://trivokenya.store",
-    siteName: "Trivo Kenya",
-    locale: "en_KE",
-    images: [{ url: "/logo-transparent.svg", width: 1200, height: 630 }],
-  },
-  alternates: {
-    canonical: "https://trivokenya.store",
-  },
-};
+  useEffect(() => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
 
-export default async function Home() {
-  let products: Record<string, unknown>[] = [];
-  let dbError = false;
+    fetch("/api/products", { signal: controller.signal })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.error) {
+          setError(true);
+        } else {
+          setProducts(data.products || []);
+        }
+      })
+      .catch(() => setError(true))
+      .finally(() => {
+        setLoading(false);
+        clearTimeout(timeout);
+      });
 
-  try {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-      .from("products")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("Homepage products fetch error:", error.message);
-      dbError = true;
-    } else {
-      products = (data || []) as Record<string, unknown>[];
-    }
-  } catch (e) {
-    console.error("Homepage error:", e);
-    dbError = true;
-  }
+    return () => {
+      clearTimeout(timeout);
+      controller.abort();
+    };
+  }, []);
 
   const featuredProduct = products.find((p) => p.is_featured) || products[0] || null;
   const gridProducts = products.filter((p) => p.id !== featuredProduct?.id);
@@ -52,10 +45,17 @@ export default async function Home() {
       <Navbar />
       <main>
         <Hero product={featuredProduct as never} />
-        <div className="relative bg-background" style={{ zIndex: 2 }}>
-          {dbError ? (
+        <div id="products">
+          {loading ? (
             <section className="py-24 text-center">
-              <p className="text-muted-foreground">Unable to load products right now. Please refresh the page.</p>
+              <div className="flex items-center justify-center">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+              </div>
+            </section>
+          ) : error ? (
+            <section className="py-24 text-center">
+              <Package className="h-12 w-12 text-muted-foreground/20 mx-auto mb-4" />
+              <p className="text-muted-foreground text-sm">Unable to load products right now. Please refresh the page.</p>
             </section>
           ) : (
             <ProductGrid products={gridProducts as never} />

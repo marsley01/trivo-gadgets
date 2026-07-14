@@ -105,6 +105,8 @@ export default function AdminDashboardClient({
     published_at: new Date().toISOString().split("T")[0],
     related_product_ids: [] as string[],
   });
+  const [blogAiLoading, setBlogAiLoading] = useState(false);
+  const [blogProductId, setBlogProductId] = useState("");
   // CJ Import state
   const [cjInput, setCjInput] = useState("");
   const [cjFetching, setCjFetching] = useState(false);
@@ -1733,8 +1735,62 @@ export default function AdminDashboardClient({
               <div>
                 <input type="date" placeholder="Published At" value={blogForm.published_at} onChange={(e) => setBlogForm((f) => ({ ...f, published_at: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-accent" />
               </div>
+              <div className="md:col-span-2 flex gap-2 items-start">
+                <div className="flex-1">
+                  <input type="url" placeholder="Cover Image URL" value={blogForm.cover_image_url} onChange={(e) => setBlogForm((f) => ({ ...f, cover_image_url: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent" />
+                </div>
+                <button type="button" onClick={async () => {
+                  const kw = blogForm.title.split(" ").slice(0, 3).join(" ") || "tech gadget";
+                  const url = `https://source.unsplash.com/1200x630/?${encodeURIComponent(kw)}`;
+                  setBlogForm((f) => ({ ...f, cover_image_url: url }));
+                }} className="rounded-lg border border-default px-3 py-2.5 text-xs text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">
+                  Auto Image
+                </button>
+              </div>
               <div className="md:col-span-2">
-                <input type="url" placeholder="Cover Image URL" value={blogForm.cover_image_url} onChange={(e) => setBlogForm((f) => ({ ...f, cover_image_url: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent" />
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-surface/50 border border-default">
+                  <div className="flex-1">
+                    <select value={blogProductId} onChange={(e) => setBlogProductId(e.target.value)} className="w-full bg-background border border-default rounded-lg px-3 py-2 text-xs text-foreground focus:outline-none focus:border-accent">
+                      <option value="">-- Select a product to generate from --</option>
+                      {products.map((p) => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <button type="button" onClick={async () => {
+                    if (!blogProductId) return;
+                    setBlogAiLoading(true);
+                    try {
+                      const res = await fetch("/api/blog/generate", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ productId: blogProductId }),
+                      });
+                      const data = await res.json();
+                      if (data.error) {
+                        addToast(data.error, "error");
+                      } else {
+                        setBlogForm((f) => ({
+                          ...f,
+                          title: data.title || f.title,
+                          slug: data.slug || f.slug,
+                          excerpt: data.excerpt || f.excerpt,
+                          content: data.content || f.content,
+                          seo_title: data.seo_title || f.seo_title,
+                          seo_description: data.seo_description || f.seo_description,
+                        }));
+                        addToast("Blog post generated!", "success");
+                      }
+                    } catch (err: unknown) {
+                      const msg = err instanceof Error ? err.message : "Generation failed";
+                      addToast(msg, "error");
+                    }
+                    setBlogAiLoading(false);
+                  }} disabled={blogAiLoading || !blogProductId} className="rounded-lg bg-gradient-to-r from-purple-600 to-pink-500 px-4 py-2 text-xs font-bold text-white shadow-md hover:from-purple-500 hover:to-pink-400 transition-all disabled:opacity-50 flex items-center gap-1.5">
+                    {blogAiLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                    {blogAiLoading ? "Generating..." : "AI Generate Blog Post"}
+                  </button>
+                </div>
               </div>
               <div className="md:col-span-2">
                 <textarea placeholder="Excerpt (brief summary shown on blog listing)" rows={2} value={blogForm.excerpt} onChange={(e) => setBlogForm((f) => ({ ...f, excerpt: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent resize-none" />

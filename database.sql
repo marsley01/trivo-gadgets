@@ -300,6 +300,8 @@ CREATE POLICY "Allow authenticated insert reviews" ON public.reviews FOR INSERT 
 
 -- Admin Orders Policies
 DROP POLICY IF EXISTS "Allow public read admin_orders by receipt" ON public.admin_orders;
+CREATE POLICY "Allow public read admin_orders by receipt" ON public.admin_orders
+  FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "Allow vendor read own admin_orders" ON public.admin_orders;
 CREATE POLICY "Allow vendor read own admin_orders" ON public.admin_orders

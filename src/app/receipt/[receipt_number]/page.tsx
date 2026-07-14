@@ -1,27 +1,42 @@
 import { createServerClient } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 import { Database } from "@/types/database.types";
 import { notFound } from "next/navigation";
 import { CheckCircle } from "lucide-react";
 import PrintButton from "@/components/receipt/PrintButton";
 import { WHATSAPP_NUMBER } from "@/lib/config";
 
+export const dynamic = "force-dynamic";
+
 type AdminOrder = Database["public"]["Tables"]["admin_orders"]["Row"];
 
-function getAdminClient() {
-  return createServerClient<Database>(
+async function getOrder(receiptNumber: string): Promise<AdminOrder | null> {
+  // Try with service role key first (bypasses RLS), fall back to anon
+  if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    const supabase = createClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+    const { data } = await supabase
+      .from("admin_orders")
+      .select("*")
+      .eq("receipt_number", receiptNumber)
+      .single();
+    if (data) return data;
+  }
+
+  // Fallback: anon key with RLS (works if the public read policy is deployed)
+  const supabase = createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     { cookies: { getAll: () => [], setAll: () => {} } }
   );
-}
-
-async function getOrder(receiptNumber: string): Promise<AdminOrder | null> {
-  const supabase = getAdminClient();
   const { data } = await supabase
     .from("admin_orders")
     .select("*")
     .eq("receipt_number", receiptNumber)
-    .single();
+    .maybeSingle();
 
   return data;
 }

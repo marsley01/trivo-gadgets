@@ -5,7 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 import { Database, type Json } from "@/types/database.types";
 import { revalidatePath } from "next/cache";
 import { upscaleImage } from "@/lib/upscale";
-import DOMPurify from "isomorphic-dompurify";
+import sanitizeHtml from "sanitize-html";
 
 type Product = Database["public"]["Tables"]["products"]["Row"];
 
@@ -536,7 +536,15 @@ export async function createBlogPost(formData: FormData) {
   if (title.length > 200) throw new Error("Title must be 200 characters or less.");
   const slug = (formData.get("slug") as string || "").trim();
   if (!slug) throw new Error("Slug is required.");
-  const content = DOMPurify.sanitize(formData.get("content") as string || "");
+  const content = sanitizeHtml(formData.get("content") as string || "", {
+    allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img", "h1", "h2", "h3", "h4", "h5", "h6", "blockquote", "pre", "code", "ul", "ol", "li", "table", "thead", "tbody", "tr", "th", "td"]),
+    allowedAttributes: {
+      ...sanitizeHtml.defaults.allowedAttributes,
+      img: ["src", "alt", "width", "height", "loading"],
+      a: ["href", "target", "rel"],
+    },
+    allowedIframeHostnames: ["www.youtube.com", "youtube.com"],
+  });
   if (!content) throw new Error("Content is required.");
   const excerpt = (formData.get("excerpt") as string || "").trim();
   const cover_image_url = (formData.get("cover_image_url") as string || "").trim();
@@ -572,7 +580,15 @@ export async function updateBlogPost(id: string, formData: FormData) {
   if (title.length > 200) throw new Error("Title must be 200 characters or less.");
   const slug = (formData.get("slug") as string || "").trim();
   if (!slug) throw new Error("Slug is required.");
-  const content = DOMPurify.sanitize(formData.get("content") as string || "");
+  const content = sanitizeHtml(formData.get("content") as string || "", {
+    allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img", "h1", "h2", "h3", "h4", "h5", "h6", "blockquote", "pre", "code", "ul", "ol", "li", "table", "thead", "tbody", "tr", "th", "td"]),
+    allowedAttributes: {
+      ...sanitizeHtml.defaults.allowedAttributes,
+      img: ["src", "alt", "width", "height", "loading"],
+      a: ["href", "target", "rel"],
+    },
+    allowedIframeHostnames: ["www.youtube.com", "youtube.com"],
+  });
   if (!content) throw new Error("Content is required.");
   const excerpt = (formData.get("excerpt") as string || "").trim();
   const cover_image_url = (formData.get("cover_image_url") as string || "").trim();

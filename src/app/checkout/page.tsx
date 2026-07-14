@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { useCart } from "@/context/CartContext";
+import { createClient } from "@/lib/supabase/client";
 import { generateCartWhatsAppLink } from "@/lib/config";
 import { ChevronRight, ShoppingBag, MapPin, Phone, User, MessageCircle, CheckCircle, Sparkles, Heart } from "lucide-react";
 
@@ -17,10 +18,25 @@ export default function CheckoutPage() {
   const [orderNote, setOrderNote] = useState("");
   const [placed, setPlaced] = useState(false);
   const [popupVisible, setPopupVisible] = useState(false);
+  const [customerId, setCustomerId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (user?.id) {
+        const { data: customer } = await supabase
+          .from("customers")
+          .select("id")
+          .eq("user_id", user.id)
+          .single();
+        if (customer) setCustomerId(customer.id);
+      }
+    });
+  }, []);
 
   const showPopup = () => { setPlaced(true); setTimeout(() => setPopupVisible(true), 100); };
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     const checkoutItems = items.map((i) => ({ name: i.name, quantity: i.quantity, price: i.price }));
     const link = generateCartWhatsAppLink(checkoutItems, cartTotal);
     const note = orderNote ? `\n\n*Note:* ${orderNote}` : "";
@@ -28,6 +44,22 @@ export default function CheckoutPage() {
     const fullLink = link.replace("Please confirm availability.", `Please confirm availability.${customerInfo}${note}`);
     window.open(fullLink, "_blank");
     clearCart();
+
+    // Save order to database if user is logged in
+    if (customerId) {
+      try {
+        const supabase = createClient();
+        await supabase.from("orders").insert({
+          customer_id: customerId,
+          items: checkoutItems,
+          total: cartTotal,
+          status: "pending",
+          whatsapp_message: fullLink,
+        });
+      } catch (err) {
+        console.error("Failed to save order:", err);
+      }
+    }
     showPopup();
   };
 

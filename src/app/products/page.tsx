@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     siteName: "Trivo Kenya",
     locale: "en_KE",
     type: "website",
-    images: [{ url: "https://trivokenya.store/og-image.jpg", width: 1200, height: 630 }],
+    images: [{ url: "/logo-transparent.svg", width: 1200, height: 630 }],
   },
   alternates: {
     canonical: "https://trivokenya.store/products",

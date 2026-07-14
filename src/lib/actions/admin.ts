@@ -1,7 +1,7 @@
 "use server";
 
 import { createServerClient } from "@supabase/ssr";
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/server";
 import { Database, type Json } from "@/types/database.types";
 import { revalidatePath } from "next/cache";
 import { upscaleImage } from "@/lib/upscale";
@@ -18,12 +18,9 @@ function getAdminClient() {
 }
 
 async function verifyAdminAuth(requiredRole?: "admin" | "superadmin") {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
+  if (authError || !user || !user.email) {
     throw new Error("Unauthorized");
   }
   const { data: adminUser } = await supabase
@@ -628,6 +625,7 @@ export async function deleteBlogPost(id: string) {
 }
 
 export async function getBlogPosts() {
+  await verifyAdminAuth();
   const supabase = getAdminClient();
   const { data, error } = await supabase
     .from("blog_posts")

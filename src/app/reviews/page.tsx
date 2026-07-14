@@ -9,9 +9,14 @@ import { getReviews, type Review } from "@/lib/reviews";
 
 export default function ReviewsPage() {
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    getReviews().then(setReviews);
+    getReviews()
+      .then(setReviews)
+      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load reviews"))
+      .finally(() => setLoading(false));
   }, []);
 
   return (
@@ -33,7 +38,17 @@ export default function ReviewsPage() {
             Real feedback from Trivo Kenya customers ({reviews.length} {reviews.length === 1 ? "review" : "reviews"})
           </p>
 
-          {reviews.length > 0 ? (
+          {loading ? (
+            <div className="flex items-center justify-center py-24">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center py-24 text-center">
+              <MessageSquare className="h-16 w-16 text-red-400/20 mb-4" />
+              <h3 className="text-lg font-bold text-foreground mb-2">Something went wrong</h3>
+              <p className="text-muted text-sm max-w-md mb-6">{error}</p>
+            </div>
+          ) : reviews.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {reviews.map((review) => (
                 <div key={review.id} className="rounded-2xl border border-subtle/20 bg-card/50 p-6 space-y-3">

@@ -1,82 +1,40 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Database } from "@/types/database.types";
+import type { Database } from "@/types/database.types";
 import { generateWhatsAppLink as genWhatsApp } from "@/lib/config";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Package } from "lucide-react";
 
 type Product = Database["public"]["Tables"]["products"]["Row"];
 
 export default function Hero({ product }: { product: Product | null }) {
-  const sectionRef = useRef<HTMLElement>(null);
-  const [scrollProgress, setScrollProgress] = useState(0);
+  const [imgError, setImgError] = useState(false);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      if (!sectionRef.current) return;
-      const rect = sectionRef.current.getBoundingClientRect();
-      const windowH = window.innerHeight;
-      const progress = Math.max(0, Math.min(1, (windowH - rect.top) / windowH));
-      setScrollProgress(progress);
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll();
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  const blurAmount = scrollProgress * 16;
-  const contentOpacity = Math.max(0, 1 - scrollProgress * 1.5);
-  const scale = 1 + scrollProgress * 0.04;
-
-  const [heroImageSrc, setHeroImageSrc] = useState(
-    product?.image_url || "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=1920&auto=format&fit=crop"
-  );
-
-  const handleImageError = () => {
-    setHeroImageSrc("");
-  };
+  const heroImage = product?.image_url
+    || "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=1920&auto=format&fit=crop";
 
   return (
-    <section
-      ref={sectionRef}
-      className="sticky top-0 h-screen w-full overflow-hidden bg-neutral-950 font-sans"
-      style={{ zIndex: 1 }}
-    >
+    <section className="sticky top-0 h-screen w-full overflow-hidden bg-neutral-950 font-sans" style={{ zIndex: 1 }}>
       <div className="absolute inset-0">
-        {heroImageSrc ? (
+        {!imgError ? (
           <Image
-            src={heroImageSrc}
+            src={heroImage}
             alt=""
             fill
             className="object-cover"
             priority
             sizes="100vw"
-            onError={handleImageError}
-            style={{ filter: `blur(${blurAmount}px)`, transform: `scale(${scale})` }}
+            onError={() => setImgError(true)}
           />
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-neutral-900 via-neutral-950 to-neutral-900" />
         )}
-        <div
-          className="absolute inset-0 transition-all duration-75"
-          style={{
-            background: `linear-gradient(180deg, 
-              rgba(0,0,0,${0.2 + scrollProgress * 0.4}) 0%, 
-              rgba(0,0,0,${0.4 + scrollProgress * 0.3}) 40%, 
-              rgba(0,0,0,${0.7 + scrollProgress * 0.3}) 100%
-            )`,
-          }}
-        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
       </div>
 
-      {/* Content */}
-      <div
-        className="relative z-10 flex h-full flex-col justify-center px-6 md:px-12 lg:px-20"
-        style={{ opacity: contentOpacity }}
-      >
+      <div className="relative z-10 flex h-full flex-col justify-center px-6 md:px-12 lg:px-20">
         <div className="max-w-3xl">
           <p className="mb-4 text-xs font-bold uppercase tracking-[0.25em] text-neutral-400">
             Trivo Kenya
@@ -139,11 +97,7 @@ export default function Hero({ product }: { product: Product | null }) {
         </div>
       </div>
 
-      {/* Scroll indicator */}
-      <div
-        className="absolute bottom-8 left-1/2 z-10 -translate-x-1/2 transition-opacity duration-300"
-        style={{ opacity: Math.max(0, 1 - scrollProgress * 2) }}
-      >
+      <div className="absolute bottom-8 left-1/2 z-10 -translate-x-1/2">
         <div className="flex flex-col items-center gap-2">
           <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-neutral-500">
             Scroll

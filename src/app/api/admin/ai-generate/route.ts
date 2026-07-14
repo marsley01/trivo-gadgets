@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateText } from "ai";
-import { createClient } from "@supabase/supabase-js";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 import { rateLimit } from "@/lib/rate-limiter";
 
 const openrouter = createOpenAI({
@@ -79,9 +80,16 @@ No markdown formatting, no code fences, just raw JSON.`;
 
 export async function POST(req: Request) {
   try {
-    const supabase = createClient(
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() { return cookieStore.getAll(); },
+          setAll() {},
+        },
+      }
     );
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {

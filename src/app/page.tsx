@@ -36,9 +36,11 @@ export default async function Home() {
   return (
     <>
       <Navbar />
-      <main className="flex-1 flex flex-col">
+      <main>
         <Hero product={featuredProduct} />
-        <ProductGrid products={gridProducts} />
+        <div className="relative bg-background" style={{ zIndex: 2 }}>
+          <ProductGrid products={gridProducts} />
+        </div>
       </main>
       <Footer />
     </>

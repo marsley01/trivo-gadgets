@@ -31,8 +31,13 @@ export default function Hero({ product }: { product: Product | null }) {
   const contentOpacity = Math.max(0, 1 - scrollProgress * 1.5);
   const scale = 1 + scrollProgress * 0.04;
 
-  const heroImage = product?.image_url
-    || "https://images.unsplash.com/photo-1635048424329-a9bfb146d7aa?q=80&w=1920&auto=format&fit=crop";
+  const [heroImageSrc, setHeroImageSrc] = useState(
+    product?.image_url || "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=1920&auto=format&fit=crop"
+  );
+
+  const handleImageError = () => {
+    setHeroImageSrc("");
+  };
 
   return (
     <section
@@ -41,15 +46,20 @@ export default function Hero({ product }: { product: Product | null }) {
       style={{ zIndex: 1 }}
     >
       <div className="absolute inset-0">
-        <Image
-          src={heroImage}
-          alt=""
-          fill
-          className="object-cover"
-          priority
-          sizes="100vw"
-          style={{ filter: `blur(${blurAmount}px)`, transform: `scale(${scale})` }}
-        />
+        {heroImageSrc ? (
+          <Image
+            src={heroImageSrc}
+            alt=""
+            fill
+            className="object-cover"
+            priority
+            sizes="100vw"
+            onError={handleImageError}
+            style={{ filter: `blur(${blurAmount}px)`, transform: `scale(${scale})` }}
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-neutral-900 via-neutral-950 to-neutral-900" />
+        )}
         <div
           className="absolute inset-0 transition-all duration-75"
           style={{

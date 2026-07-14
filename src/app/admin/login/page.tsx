@@ -16,34 +16,40 @@ export default function AdminLogin() {
     setError("");
     setLoading(true);
 
-    const supabase = createClient();
+    try {
+      const supabase = createClient();
 
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (authError || !authData.user) {
-      setError("Wrong email or password");
+      if (authError || !authData.user) {
+        setError("Wrong email or password");
+        setLoading(false);
+        return;
+      }
+
+      const { data: adminUser, error: lookupError } = await supabase
+        .from("admin_users")
+        .select("id, role")
+        .eq("email", email)
+        .single();
+
+      if (lookupError || !adminUser) {
+        await supabase.auth.signOut();
+        setError("Wrong email or password");
+        setLoading(false);
+        return;
+      }
+
+      router.push("/admin");
+      router.refresh();
+    } catch (err) {
+      console.error("Admin login error:", err);
+      setError("Connection error. Please try again.");
       setLoading(false);
-      return;
     }
-
-    const { data: adminUser } = await supabase
-      .from("admin_users")
-      .select("id, role")
-      .eq("email", email)
-      .single();
-
-    if (!adminUser) {
-      await supabase.auth.signOut();
-      setError("Wrong email or password");
-      setLoading(false);
-      return;
-    }
-
-    router.push("/admin");
-    router.refresh();
   };
 
   return (

@@ -83,6 +83,15 @@ export async function POST(req: NextRequest) {
       console.error("Failed to send vendor welcome email:", emailError);
     }
 
+    // Notify admin
+    try {
+      const { sendAdminNotification } = await import("@/lib/notifications");
+      await sendAdminNotification({
+        type: "new_vendor",
+        data: { name: fullName || businessName, email, businessName: businessName || "" },
+      });
+    } catch {} // ignore notification failures
+
     return NextResponse.json({
       success: true,
       message: "Vendor account created. Check your email to confirm before signing in.",

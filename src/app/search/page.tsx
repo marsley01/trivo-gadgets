@@ -16,9 +16,10 @@ export const metadata: Metadata = {
 export default async function SearchPage({
   searchParams,
 }: {
-  searchParams: { q?: string };
+  searchParams: Promise<{ q?: string }>;
 }) {
-  const query = searchParams.q?.trim() || "";
+  const { q } = await searchParams;
+  const query = q?.trim() || "";
 
   const supabase = await createClient();
   let products: Database["public"]["Tables"]["products"]["Row"][] = [];

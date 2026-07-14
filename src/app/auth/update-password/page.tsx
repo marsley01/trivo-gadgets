@@ -19,16 +19,18 @@ export default function UpdatePasswordPage() {
   const supabase = createClient();
 
   useEffect(() => {
-    let cancelled = false;
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (cancelled) return;
-      if (!session) {
-        setError("Your password reset link is invalid or expired. Please request a new one.");
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          setError("Your password reset link is invalid or expired. Please request a new one.");
+        }
+      } catch (err) {
+        console.error("Session check error:", err);
+        setError("Session verification failed. Please request a new reset link.");
       }
     };
     checkSession();
-    return () => { cancelled = true; };
   }, [supabase]);
 
   const handleUpdatePassword = async (e: React.FormEvent) => {
@@ -59,13 +61,8 @@ export default function UpdatePasswordPage() {
       setSuccess(true);
       setLoading(false);
 
-      // Sign the user out to force them to sign in with their new credentials
-      await supabase.auth.signOut();
-
-      // Redirect after 3 seconds
-      setTimeout(() => {
-        router.push("/auth/login");
-      }, 3000);
+      try { await supabase.auth.signOut(); } catch {}
+      setTimeout(() => router.push("/auth/login"), 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unexpected error occurred");
       setLoading(false);

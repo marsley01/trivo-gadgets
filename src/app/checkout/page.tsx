@@ -28,7 +28,7 @@ export default function CheckoutPage() {
           .from("customers")
           .select("id")
           .eq("user_id", user.id)
-          .single();
+          .maybeSingle();
         if (customer) setCustomerId(customer.id);
       }
     });
@@ -38,28 +38,51 @@ export default function CheckoutPage() {
 
   const handlePlaceOrder = async () => {
     const checkoutItems = items.map((i) => ({ name: i.name, quantity: i.quantity, price: i.price }));
-    const link = generateCartWhatsAppLink(checkoutItems, cartTotal);
     const note = orderNote ? `\n\n*Note:* ${orderNote}` : "";
     const customerInfo = `\n\n*Customer:* ${name}\n*Phone:* ${phone}\n*Location:* ${location}`;
-    const fullLink = link.replace("Please confirm availability.", `Please confirm availability.${customerInfo}${note}`);
-    window.open(fullLink, "_blank");
-    clearCart();
+    const fullMessage = `Hi Trivo! I want to order:\n\n${checkoutItems.map((i) => `- ${i.name} x${i.quantity} @ KES ${i.price.toLocaleString()}`).join("\n")}\n\nTotal: KES ${cartTotal.toLocaleString()}\n\nPlease confirm availability.${customerInfo}${note}`;
+    const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "254757512769";
+    const fullLink = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(fullMessage)}`;
 
-    // Save order to database if user is logged in
+    window.open(fullLink, "_blank");
+
+    let orderId: string | null = null;
+
     if (customerId) {
       try {
         const supabase = createClient();
-        await supabase.from("orders").insert({
+        const { data } = await supabase.from("orders").insert({
           customer_id: customerId,
           items: checkoutItems,
           total: cartTotal,
           status: "pending",
-          whatsapp_message: fullLink,
-        });
+          whatsapp_message: fullMessage,
+        }).select("id").single();
+        orderId = data?.id || null;
       } catch (err) {
         console.error("Failed to save order:", err);
       }
     }
+
+    // Notify admin in background
+    const { data: { user } } = await createClient().auth.getUser();
+    const notifyController = new AbortController();
+    setTimeout(() => notifyController.abort(), 5000);
+    fetch("/api/notify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "order",
+        orderId: orderId || fullMessage.slice(0, 20),
+        customerName: name,
+        total: cartTotal,
+        items: checkoutItems,
+        customerEmail: user?.email || null,
+      }),
+      signal: notifyController.signal,
+    }).catch(() => {});
+
+    clearCart();
     showPopup();
   };
 

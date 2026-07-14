@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import { upscaleImage } from "@/lib/upscale";
 import sanitizeHtml from "sanitize-html";
 import crypto from "crypto";
+import { rateLimitServerAction } from "@/lib/rate-limiter";
 
 type Product = Database["public"]["Tables"]["products"]["Row"];
 
@@ -133,6 +134,8 @@ async function handleImageUpload(supabase: ReturnType<typeof getAdminClient>, im
 }
 
 export async function createProduct(formData: FormData) {
+  const { allowed } = rateLimitServerAction("create-product", 10, 60000);
+  if (!allowed) throw new Error("Too many requests. Please slow down.");
   await verifyAdminAuth();
   const supabase = getAdminClient();
   const name = (formData.get("name") as string || "").trim();
@@ -522,6 +525,7 @@ export async function createVendor(formData: FormData) {
   });
 
   if (authError) throw new Error(`Vendor created but auth invite failed: ${authError.message}`);
+  revalidatePath("/", "layout");
 }
 
 export async function updateVendor(id: string, formData: FormData) {
@@ -544,6 +548,7 @@ export async function updateVendor(id: string, formData: FormData) {
     .eq("id", id);
 
   if (error) throw new Error(error.message);
+  revalidatePath("/", "layout");
 }
 
 export async function createBlogPost(formData: FormData) {
@@ -662,4 +667,5 @@ export async function deleteVendor(id: string) {
 
   const { error } = await supabase.from("vendors").delete().eq("id", id);
   if (error) throw new Error(error.message);
+  revalidatePath("/", "layout");
 }

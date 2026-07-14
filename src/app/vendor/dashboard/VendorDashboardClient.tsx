@@ -155,13 +155,17 @@ export default function VendorDashboardClient({ vendor }: { vendor: Vendor }) {
       if (!res.ok) throw new Error(data.error || "AI generation failed");
       setForm((f) => ({
         ...f,
-        name: data.title,
-        description: data.description,
+        name: f.name,
+        description: data.short_description || "",
+        long_description: data.long_description || "",
         seo_title: data.seo_title,
         seo_description: data.seo_description,
         focus_keyword: data.focus_keyword,
+        secondary_keywords: data.secondary_keywords || "",
         category: data.category,
+        tags: JSON.stringify(data.product_tags || []),
       }));
+      if (data.product_tags) setVisTags(data.product_tags);
       addToast("AI content generated!", "success");
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "AI generation failed";

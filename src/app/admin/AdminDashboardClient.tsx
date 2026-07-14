@@ -239,7 +239,7 @@ export default function AdminDashboardClient({
       if (!res.ok) throw new Error(data.error || "AI generation failed");
       setForm((f) => ({
         ...f,
-        name: data.seo_title || data.seo_title,
+        name: f.name,
         description: data.short_description || "",
         long_description: data.long_description || "",
         seo_title: data.seo_title,
@@ -1429,7 +1429,10 @@ export default function AdminDashboardClient({
                   setCjFetching(true);
                   setCjError("");
                   try {
-                    const res = await fetch(`/api/cj/product?pid=${encodeURIComponent(pid)}`);
+                    const controller = new AbortController();
+                    const timeout = setTimeout(() => controller.abort(), 15000);
+                    const res = await fetch(`/api/cj/product?pid=${encodeURIComponent(pid)}`, { signal: controller.signal });
+                    clearTimeout(timeout);
                     const data = await res.json();
                     if (!res.ok) { setCjError(data.error || "Product not found. Check the URL and try again."); return; }
                     setCjProduct(data);
@@ -1644,8 +1647,7 @@ export default function AdminDashboardClient({
                       fd.set("cj_product_id", cjProduct.pid);
                       await createProduct(fd);
                       await refresh();
-                      const newProduct = products.find((p) => p.cj_product_id === cjProduct.pid);
-                      setCjImportSuccess({ id: newProduct?.id || "", name: cjImportForm.name, slug: newProduct?.slug });
+                      setCjImportSuccess({ id: cjProduct.pid, name: cjImportForm.name, slug: "" });
                       addToast("Product added! It's now live on the store.", "success");
                     } catch (err: unknown) {
                       const message = err instanceof Error ? err.message : "Failed to add product";

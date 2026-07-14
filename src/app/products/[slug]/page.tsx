@@ -2,12 +2,27 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createStaticClient } from "@supabase/supabase-js";
 import type { Metadata } from "next";
+import { Database } from "@/types/database.types";
 import ProductDetailClient from "./ProductDetailClient";
 import { getServerReviews } from "@/lib/reviews.server";
 
+export const dynamic = "force-dynamic";
+
+export const revalidate = 0;
+
+type Product = Database["public"]["Tables"]["products"]["Row"];
+
+async function getProduct(slug: string) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("products")
+    .select("*")
+    .eq("slug", slug)
+    .single();
+  return data as Product | null;
+}
+
 export async function generateStaticParams() {
-  // Guard: if env vars aren't present (e.g. CI build without .env.local),
-  // return empty array so Next.js falls back to on-demand rendering.
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     return [];
   }
@@ -23,12 +38,20 @@ type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const supabase = await createClient();
-  const { data: product } = await supabase
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    return { title: "Product | Trivo Kenya" };
+  }
+  const supabase = createStaticClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  );
+  const { data: rawProduct } = await supabase
     .from("products")
     .select("*")
     .eq("slug", slug)
     .single();
+
+  const product = rawProduct as Product | null;
 
   if (!product) return { title: "Product Not Found | Trivo Kenya" };
 
@@ -65,25 +88,36 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
-  const supabase = await createClient();
-  const { data: product } = await supabase
-    .from("products")
-    .select("*")
-    .eq("slug", slug)
-    .single();
+
+  let product: Product | null = null;
+  try {
+    product = await getProduct(slug);
+  } catch (e) {
+    console.error("ProductPage error:", e);
+  }
 
   if (!product) notFound();
 
-  const { data: related } = await supabase
-    .from("products")
-    .select("*")
-    .neq("id", product.id)
-    .limit(4);
+  let related: Product[] = [];
+  let reviews: { id: string; product_id: string; customer_name: string; rating: number; text: string; created_at: string }[] = [];
+  let avgRating = 0;
 
-  const reviews = await getServerReviews(product.id);
-  const avgRating = reviews.length > 0
-    ? Math.round((reviews.reduce((a, r) => a + r.rating, 0) / reviews.length) * 10) / 10
-    : 0;
+  try {
+    const supabase = await createClient();
+    const { data: rel } = await supabase
+      .from("products")
+      .select("*")
+      .neq("id", product.id)
+      .limit(4);
+    related = (rel || []) as Product[];
+
+    reviews = await getServerReviews(product.id);
+    avgRating = reviews.length > 0
+      ? Math.round((reviews.reduce((a, r) => a + r.rating, 0) / reviews.length) * 10) / 10
+      : 0;
+  } catch (e) {
+    console.error("ProductPage secondary fetch error:", e);
+  }
 
   const productSchema: Record<string, unknown> = {
     "@context": "https://schema.org",
@@ -102,7 +136,7 @@ export default async function ProductPage({ params }: Props) {
       "@type": "Offer",
       price: product.price,
       priceCurrency: "KES",
-      availability: product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      availability: (product.stock ?? 0) > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
       url: `https://trivokenya.store/products/${product.slug}`,
       seller: {
         "@type": "Organization",
@@ -181,7 +215,7 @@ export default async function ProductPage({ params }: Props) {
           }),
         }}
       />
-      <ProductDetailClient product={product} relatedProducts={related || []} />
+      <ProductDetailClient product={product as never} relatedProducts={related as never} />
     </>
   );
 }

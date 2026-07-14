@@ -13,27 +13,43 @@ export default function ReviewsSection({ productId, productName }: { productId: 
   const [text, setText] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    getReviews(productId).then(setReviews);
-    getAverageRating(productId).then(setAvgRating);
+    getReviews(productId).then(setReviews).catch(() => setError("Failed to load reviews"));
+    getAverageRating(productId).then(setAvgRating).catch(() => {});
   }, [productId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !text.trim()) return;
     setSubmitting(true);
-    await addReview({ product_id: productId, customer_name: name, rating, text });
-    const updated = await getReviews(productId);
-    setReviews(updated);
-    setAvgRating(await getAverageRating(productId));
-    setName("");
-    setRating(5);
-    setText("");
-    setShowForm(false);
+    setError(null);
+    try {
+      const result = await addReview({ product_id: productId, customer_name: name, rating, text });
+      if (!result) { setError("Failed to submit review. Please try again."); setSubmitting(false); return; }
+      const updated = await getReviews(productId);
+      setReviews(updated);
+      setAvgRating(await getAverageRating(productId));
+      // Notify admin
+      const notifyController = new AbortController();
+      setTimeout(() => notifyController.abort(), 5000);
+      fetch("/api/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "review", productName, customerName: name, rating, text }),
+        signal: notifyController.signal,
+      }).catch(() => {});
+      setName("");
+      setRating(5);
+      setText("");
+      setShowForm(false);
+      setSubmitted(true);
+      setTimeout(() => setSubmitted(false), 3000);
+    } catch {
+      setError("Something went wrong. Please try again.");
+    }
     setSubmitting(false);
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 3000);
   };
 
   return (
@@ -68,6 +84,12 @@ export default function ReviewsSection({ productId, productName }: { productId: 
       {submitted && (
         <div className="mb-6 rounded-xl bg-green-500/10 border border-green-500/20 px-5 py-3 text-sm text-green-400">
           Thank you! Your review has been submitted.
+        </div>
+      )}
+
+      {error && (
+        <div className="mb-6 rounded-xl bg-red-500/10 border border-red-500/20 px-5 py-3 text-sm text-red-400">
+          {error}
         </div>
       )}
 

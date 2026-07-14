@@ -25,16 +25,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
-  // Load cart from localStorage on mount
   useEffect(() => {
     setIsMounted(true);
-    const savedCart = localStorage.getItem("trivo_cart");
-    if (savedCart) {
-      try {
-        setItems(JSON.parse(savedCart));
-      } catch {
-        console.error("Failed to parse cart");
+    try {
+      const savedCart = localStorage.getItem("trivo_cart");
+      if (savedCart) {
+        try {
+          setItems(JSON.parse(savedCart));
+        } catch {
+          console.error("Failed to parse cart");
+        }
       }
+    } catch (e) {
+      console.error("Failed to load cart from localStorage:", e);
     }
   }, []);
 

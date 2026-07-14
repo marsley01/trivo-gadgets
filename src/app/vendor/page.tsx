@@ -16,40 +16,46 @@ export default function VendorLogin() {
     setError("");
     setLoading(true);
 
-    const supabase = createClient();
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const supabase = createClient();
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (authError || !authData?.user) {
-      setError("Wrong email or password");
+      if (authError || !authData?.user) {
+        setError("Wrong email or password");
+        setLoading(false);
+        return;
+      }
+
+      const { data: vendor, error: lookupError } = await supabase
+        .from("vendors")
+        .select("id, status")
+        .eq("email", email)
+        .single();
+
+      if (lookupError || !vendor) {
+        await supabase.auth.signOut();
+        setError("Wrong email or password");
+        setLoading(false);
+        return;
+      }
+
+      if (vendor.status === "suspended") {
+        await supabase.auth.signOut();
+        setError("Your vendor account has been suspended");
+        setLoading(false);
+        return;
+      }
+
+      router.push("/vendor/dashboard");
+      router.refresh();
+    } catch (err) {
+      console.error("Vendor login error:", err);
+      setError("Connection error. Please try again.");
       setLoading(false);
-      return;
     }
-
-    const { data: vendor } = await supabase
-      .from("vendors")
-      .select("id, status")
-      .eq("email", email)
-      .single();
-
-    if (!vendor) {
-      await supabase.auth.signOut();
-      setError("Wrong email or password");
-      setLoading(false);
-      return;
-    }
-
-    if (vendor.status === "suspended") {
-      await supabase.auth.signOut();
-      setError("Your vendor account has been suspended");
-      setLoading(false);
-      return;
-    }
-
-    router.push("/vendor/dashboard");
-    router.refresh();
   };
 
   return (

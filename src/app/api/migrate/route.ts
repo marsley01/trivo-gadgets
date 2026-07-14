@@ -6,8 +6,11 @@
 import { createServerClient } from "@supabase/ssr";
 import { readFileSync } from "fs";
 import { join } from "path";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import type { Database } from "@/types/database.types";
+import { rateLimit } from "@/lib/rate-limiter";
+
+export const dynamic = "force-dynamic";
 
 function getAdminClient() {
   return createServerClient<Database>(
@@ -25,7 +28,15 @@ function parseStatements(sql: string): string[] {
     .map((s) => s + ";");
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
+  const { allowed, retryAfter } = rateLimit(`migrate:${ip}`, 5, 3600000);
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Too many migration attempts" },
+      { status: 429, headers: { "Retry-After": String(retryAfter) } }
+    );
+  }
   try {
     const supabase = getAdminClient();
     const sqlPath = join(process.cwd(), "database.sql");

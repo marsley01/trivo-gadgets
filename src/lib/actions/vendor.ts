@@ -6,6 +6,7 @@ import { Database } from "@/types/database.types";
 import { revalidatePath } from "next/cache";
 import { upscaleImage } from "@/lib/upscale";
 import crypto from "crypto";
+import { rateLimitServerAction } from "@/lib/rate-limiter";
 
 type Product = Database["public"]["Tables"]["products"]["Row"];
 
@@ -23,6 +24,18 @@ function generateUniqueSlug(name: string): string {
   const base = slugify(name) || "product";
   const suffix = crypto.randomUUID().slice(0, 6);
   return `${base}-${suffix}`;
+}
+
+function validateUrl(input: string): boolean {
+  try {
+    const url = new URL(input);
+    if (url.protocol !== "https:" && url.protocol !== "http:") return false;
+    if (url.hostname === "localhost" || url.hostname === "127.0.0.1" || url.hostname === "0.0.0.0") return false;
+    if (url.hostname.startsWith("169.254") || url.hostname.startsWith("10.") || url.hostname.startsWith("172.") || url.hostname.startsWith("192.168")) return false;
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function getAdminClient() {
@@ -148,6 +161,8 @@ export async function updateProductStock(productId: string, stock: number) {
 }
 
 export async function createVendorProduct(formData: FormData, vendorId: string) {
+  const { allowed } = rateLimitServerAction("create-vendor-product", 10, 60000);
+  if (!allowed) throw new Error("Too many requests. Please slow down.");
   const vendor = await verifyVendorAuth(vendorId);
   const adminClient = getAdminClient();
 
@@ -190,6 +205,9 @@ export async function createVendorProduct(formData: FormData, vendorId: string) 
       .getPublicUrl(fileName);
     final_image_url = publicUrl;
   } else if (image_url && image_url.startsWith("http")) {
+    if (!validateUrl(image_url)) {
+      throw new Error("Invalid image URL: URL must be a valid public HTTPS URL.");
+    }
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 10000);

@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import { Database } from "@/types/database.types";
-import { Shield, CheckCircle, Truck, Heart, ShoppingCart, MessageCircle, Star, Check, Tag, Ruler } from "lucide-react";
+import { Shield, CheckCircle, Truck, Heart, ShoppingCart, MessageCircle, Star, Check, Tag, Ruler, Package } from "lucide-react";
 import { generateWhatsAppLink } from "@/lib/config";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
@@ -58,9 +58,16 @@ export default function ProductDetailClient({
   const whatsappLink = generateWhatsAppLink(product.name, displayPrice, hasVariants && Object.keys(selectedOptions).length > 0 ? selectedOptions : undefined);
 
   // Gallery: split image_url into multiple images (comma-separated) or use single
-  const images = product.image_url
+  const allImages = product.image_url
     ? product.image_url.split(",").map((u) => u.trim())
-    : ["https://images.unsplash.com/photo-1590658268037-6bf12165a8df?q=80&w=1200&auto=format&fit=crop"];
+    : [];
+  const fallbackImage = "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=1200&auto=format&fit=crop";
+  const images = allImages.length > 0 ? allImages : [fallbackImage];
+  const [imgErrors, setImgErrors] = useState<Record<number, boolean>>({});
+
+  const handleImgError = (index: number) => {
+    setImgErrors((prev) => ({ ...prev, [index]: true }));
+  };
 
   const features = useMemo(() => (product.features as string[]) || [], [product.features]);
   const specifications = useMemo(() => (product.specifications as Record<string, string>) || {}, [product.specifications]);
@@ -94,14 +101,21 @@ export default function ProductDetailClient({
             {/* Image Gallery */}
             <div className="space-y-4">
               <div className="relative aspect-[4/5] md:aspect-square rounded-3xl overflow-hidden bg-card border border-subtle group">
-                <Image
-                  src={images[selectedImage]}
-                  alt={product.name}
-                  fill
-                  className="object-cover transition-transform duration-500 group-hover:scale-105"
-                  priority
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                />
+                {imgErrors[selectedImage] ? (
+                  <div className="flex items-center justify-center h-full w-full text-muted-foreground/20">
+                    <Package className="h-24 w-24" />
+                  </div>
+                ) : (
+                  <Image
+                    src={images[selectedImage]}
+                    alt={product.name}
+                    fill
+                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                    priority
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    onError={() => handleImgError(selectedImage)}
+                  />
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
                 {displayStock < 1 && (
                   <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
@@ -119,7 +133,13 @@ export default function ProductDetailClient({
                         i === selectedImage ? "border-accent ring-1 ring-accent/30" : "border-subtle/30 hover:border-default"
                       }`}
                     >
-                      <Image src={img} alt={`${product.name} view ${i + 1}`} fill className="object-cover" sizes="80px" />
+                      {imgErrors[i] ? (
+                        <div className="flex items-center justify-center h-full w-full bg-surface text-muted-foreground/30">
+                          <Package className="h-6 w-6" />
+                        </div>
+                      ) : (
+                        <Image src={img} alt={`${product.name} view ${i + 1}`} fill className="object-cover" sizes="80px" onError={() => handleImgError(i)} />
+                      )}
                     </button>
                   ))}
                 </div>

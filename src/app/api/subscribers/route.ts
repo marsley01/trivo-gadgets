@@ -58,6 +58,12 @@ export async function POST(req: Request) {
       });
     }
 
+    // Notify admin
+    try {
+      const { sendAdminNotification } = await import("@/lib/notifications");
+      await sendAdminNotification({ type: "new_subscriber", data: { email } });
+    } catch {} // ignore
+
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error(err);

@@ -32,25 +32,17 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error && data.user) {
-      const { data: existing } = await supabase
-        .from("customers")
-        .select("id")
-        .eq("user_id", data.user.id)
-        .maybeSingle();
-
-      if (!existing) {
-        const adminClient = createClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.SUPABASE_SERVICE_ROLE_KEY!,
-          { auth: { autoRefreshToken: false, persistSession: false } }
-        );
-        await adminClient.from("customers").insert({
-          user_id: data.user.id,
-          email: data.user.email!,
-          full_name: data.user.user_metadata?.full_name || null,
-          phone: data.user.user_metadata?.phone || null,
-        });
-      }
+      const adminClient = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { autoRefreshToken: false, persistSession: false } }
+      );
+      await adminClient.from("customers").upsert({
+        user_id: data.user.id,
+        email: data.user.email!,
+        full_name: data.user.user_metadata?.full_name || null,
+        phone: data.user.user_metadata?.phone || null,
+      }, { onConflict: "user_id", ignoreDuplicates: true });
 
       const redirect = NextResponse.redirect(`${origin}${next}`);
       setCookies.forEach((c) => redirect.cookies.set(c.name, c.value));

@@ -2,11 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 import { Database } from "@/types/database.types";
 import { generateWhatsAppLink } from "@/lib/config";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
-import { CheckCircle2, Heart, ShoppingCart } from "lucide-react";
+import { CheckCircle2, Heart, ShoppingCart, Package } from "lucide-react";
 
 const WhatsAppIcon = ({ className }: { className?: string }) => (
   <svg
@@ -27,19 +28,27 @@ export default function ProductCard({ product }: { product: Product }) {
   const { addToCart } = useCart();
   const { hasItem, toggleItem } = useWishlist();
   const wished = hasItem(product.id);
+  const [imgError, setImgError] = useState(false);
 
   return (
     <div className="group relative flex flex-col overflow-hidden rounded-2xl bg-card transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_30px_rgba(37,211,102,0.15)] border border-transparent hover:border-accent/40">
       {/* Top Image Container */}
       <Link href={`/products/${product.slug}`} className="relative aspect-square sm:aspect-[4/5] w-full overflow-hidden bg-surface flex items-center justify-center">
-        <Image
-          src={product.image_url || "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?q=80&w=600&auto=format&fit=crop"}
-          alt={product.name}
-          fill
-          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-          quality={100}
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
-        />
+        {product.image_url && !imgError ? (
+          <Image
+            src={product.image_url}
+            alt={product.name}
+            fill
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            quality={100}
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            onError={() => setImgError(true)}
+          />
+        ) : (
+          <div className="flex items-center justify-center h-full w-full text-muted-foreground/20">
+            <Package className="h-20 w-20" />
+          </div>
+        )}
         
         {/* Wishlist Heart - top left */}
         <button

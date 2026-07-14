@@ -5,8 +5,25 @@ import { createClient } from "@/lib/supabase/server";
 import { Database } from "@/types/database.types";
 import { revalidatePath } from "next/cache";
 import { upscaleImage } from "@/lib/upscale";
+import crypto from "crypto";
 
 type Product = Database["public"]["Tables"]["products"]["Row"];
+
+function slugify(text: string): string {
+  return text
+    .toLowerCase().trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/[\s_]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 100);
+}
+
+function generateUniqueSlug(name: string): string {
+  const base = slugify(name) || "product";
+  const suffix = crypto.randomUUID().slice(0, 6);
+  return `${base}-${suffix}`;
+}
 
 function getAdminClient() {
   return createServerClient<Database>(
@@ -210,8 +227,11 @@ export async function createVendorProduct(formData: FormData, vendorId: string) 
   try { if (variants) parsedVariants = JSON.parse(variants); } catch {}
   try { if (variant_options) parsedVariantOptions = JSON.parse(variant_options); } catch {}
 
+  const slug = generateUniqueSlug(name);
+
   const { error } = await adminClient.from("products").insert({
     name,
+    slug,
     description: description || null,
     price,
     stock,

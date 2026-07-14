@@ -32,7 +32,7 @@ export default function Hero({ product }: { product: Product | null }) {
   const scale = 1 + scrollProgress * 0.04;
 
   const heroImage = product?.image_url
-    || "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?q=80&w=1920&auto=format&fit=crop";
+    || "https://images.unsplash.com/photo-1635048424329-a9bfb146d7aa?q=80&w=1920&auto=format&fit=crop";
 
   return (
     <section

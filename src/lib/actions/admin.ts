@@ -6,8 +6,26 @@ import { Database, type Json } from "@/types/database.types";
 import { revalidatePath } from "next/cache";
 import { upscaleImage } from "@/lib/upscale";
 import sanitizeHtml from "sanitize-html";
+import crypto from "crypto";
 
 type Product = Database["public"]["Tables"]["products"]["Row"];
+
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/[\s_]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 100);
+}
+
+function generateUniqueSlug(name: string): string {
+  const base = slugify(name) || "product";
+  const suffix = crypto.randomUUID().slice(0, 6);
+  return `${base}-${suffix}`;
+}
 
 function getAdminClient() {
   return createServerClient<Database>(
@@ -165,8 +183,11 @@ export async function createProduct(formData: FormData) {
   try { if (variants) parsedVariants = JSON.parse(variants); } catch {}
   try { if (variant_options) parsedVariantOptions = JSON.parse(variant_options); } catch {}
 
+  const slug = generateUniqueSlug(name);
+
   const { error } = await supabase.from("products").insert({
     name,
+    slug,
     description: description || null,
     long_description: long_description || null,
     secondary_keywords: secondary_keywords || null,

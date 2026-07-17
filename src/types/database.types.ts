@@ -411,6 +411,45 @@ export type Database = {
           }
         ]
       }
+      hero_slides: {
+        Row: {
+          id: string
+          title: string
+          subtitle: string | null
+          badge: string | null
+          cta_label: string | null
+          cta_url: string | null
+          image_url: string
+          sort_order: number
+          is_active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          subtitle?: string | null
+          badge?: string | null
+          cta_label?: string | null
+          cta_url?: string | null
+          image_url: string
+          sort_order?: number
+          is_active?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          subtitle?: string | null
+          badge?: string | null
+          cta_label?: string | null
+          cta_url?: string | null
+          image_url?: string
+          sort_order?: number
+          is_active?: boolean
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: {

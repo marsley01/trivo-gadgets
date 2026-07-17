@@ -669,3 +669,78 @@ export async function deleteVendor(id: string) {
   if (error) throw new Error(error.message);
   revalidatePath("/", "layout");
 }
+
+// ── Hero Slides CRUD ───────────────────────────────────────────────────────
+
+export async function getHeroSlides() {
+  await verifyAdminAuth();
+  const supabase = getAdminClient();
+  const { data, error } = await supabase
+    .from("hero_slides")
+    .select("*")
+    .order("sort_order", { ascending: true });
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+export async function createHeroSlide(formData: FormData) {
+  await verifyAdminAuth();
+  const supabase = getAdminClient();
+
+  const image_url = formData.get("image_url") as string;
+  if (!image_url || !validateUrl(image_url)) {
+    throw new Error("A valid HTTPS image URL is required.");
+  }
+
+  const { error } = await supabase.from("hero_slides").insert({
+    title: (formData.get("title") as string).trim(),
+    subtitle: (formData.get("subtitle") as string)?.trim() || null,
+    badge: (formData.get("badge") as string)?.trim() || null,
+    cta_label: (formData.get("cta_label") as string)?.trim() || "Shop Now",
+    cta_url: (formData.get("cta_url") as string)?.trim() || "/products",
+    image_url,
+    sort_order: parseInt(formData.get("sort_order") as string) || 0,
+    is_active: formData.get("is_active") === "true",
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath("/");
+}
+
+export async function updateHeroSlide(id: string, formData: FormData) {
+  await verifyAdminAuth();
+  const supabase = getAdminClient();
+
+  const image_url = formData.get("image_url") as string;
+  if (image_url && !validateUrl(image_url)) {
+    throw new Error("A valid HTTPS image URL is required.");
+  }
+
+  const { error } = await supabase.from("hero_slides").update({
+    title: (formData.get("title") as string).trim(),
+    subtitle: (formData.get("subtitle") as string)?.trim() || null,
+    badge: (formData.get("badge") as string)?.trim() || null,
+    cta_label: (formData.get("cta_label") as string)?.trim() || "Shop Now",
+    cta_url: (formData.get("cta_url") as string)?.trim() || "/products",
+    image_url,
+    sort_order: parseInt(formData.get("sort_order") as string) || 0,
+    is_active: formData.get("is_active") === "true",
+  }).eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/");
+}
+
+export async function deleteHeroSlide(id: string) {
+  await verifyAdminAuth();
+  const supabase = getAdminClient();
+  const { error } = await supabase.from("hero_slides").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/");
+}
+
+export async function toggleHeroSlide(id: string, is_active: boolean) {
+  await verifyAdminAuth();
+  const supabase = getAdminClient();
+  const { error } = await supabase.from("hero_slides").update({ is_active }).eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/");
+}

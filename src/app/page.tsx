@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import Hero from "@/components/home/Hero";
+import HeroSlideshow from "@/components/home/HeroSlideshow";
 import ProductGrid from "@/components/product/ProductGrid";
 import { Database } from "@/types/database.types";
 
 type Product = Database["public"]["Tables"]["products"]["Row"];
+type HeroSlide = Database["public"]["Tables"]["hero_slides"]["Row"];
 
 // ✅ SSR — Googlebot sees real product content in raw HTML
 export const dynamic = "force-dynamic";
@@ -59,26 +60,34 @@ export const metadata: Metadata = {
 
 export default async function Home() {
   let products: Product[] = [];
+  let heroSlides: HeroSlide[] = [];
 
   try {
     const supabase = await createClient();
-    const { data } = await supabase
-      .from("products")
-      .select("*")
-      .order("created_at", { ascending: false });
-    products = (data || []) as Product[];
+
+    const [productsRes, slidesRes] = await Promise.all([
+      supabase
+        .from("products")
+        .select("*")
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("hero_slides")
+        .select("*")
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true }),
+    ]);
+
+    products = (productsRes.data || []) as Product[];
+    heroSlides = (slidesRes.data || []) as HeroSlide[];
   } catch (e) {
     console.error("Homepage fetch error:", e);
   }
-
-  const featuredProduct =
-    (products.find((p) => p.is_featured) || products[0] || null) as Product | null;
 
   return (
     <>
       <Navbar />
       <main>
-        <Hero product={featuredProduct} />
+        <HeroSlideshow slides={heroSlides} />
         <div id="products">
           <ProductGrid products={products as never} />
         </div>

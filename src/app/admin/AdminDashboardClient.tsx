@@ -3,15 +3,16 @@
 import { useState, useCallback, useEffect } from "react";
 import Image from "next/image";
 import { Database } from "@/types/database.types";
-import { getAdminStatsFull, getAllOrders, getVendors, createProduct, updateProduct, deleteProduct, updateOrderStatus, createVendor, updateVendor, deleteVendor, createOrder, deleteOrder, createBlogPost, updateBlogPost, deleteBlogPost, getBlogPosts } from "@/lib/actions/admin";
+import { getAdminStatsFull, getAllOrders, getVendors, createProduct, updateProduct, deleteProduct, updateOrderStatus, createVendor, updateVendor, deleteVendor, createOrder, deleteOrder, createBlogPost, updateBlogPost, deleteBlogPost, getBlogPosts, getHeroSlides, createHeroSlide, updateHeroSlide, deleteHeroSlide, toggleHeroSlide } from "@/lib/actions/admin";
 import { sendReceiptEmail } from "@/lib/email/receipt";
 import { analyzeProductSEO, getGradeColor, getGradeBg } from "@/lib/seo";
-import { Package, Users, AlertTriangle, PackageOpen, Plus, X, Edit2, Trash2, BarChart3, DollarSign, ShoppingCart, Truck, Send, Eye, ExternalLink, Download, Loader2, ChevronLeft, Menu, LogOut, Settings2, Sparkles, FileText, Calendar } from "lucide-react";
+import { Package, Users, AlertTriangle, PackageOpen, Plus, X, Edit2, Trash2, BarChart3, DollarSign, ShoppingCart, Truck, Send, Eye, ExternalLink, Download, Loader2, ChevronLeft, ChevronDown, ChevronUp, Menu, LogOut, Settings2, Sparkles, FileText, Calendar, Image as ImageIcon } from "lucide-react";
 
 type Product = Database["public"]["Tables"]["products"]["Row"];
 type BlogPost = Database["public"]["Tables"]["blog_posts"]["Row"];
 type AdminOrder = Database["public"]["Tables"]["admin_orders"]["Row"];
 type Vendor = Database["public"]["Tables"]["vendors"]["Row"];
+type HeroSlide = Database["public"]["Tables"]["hero_slides"]["Row"];
 type Subscriber = { email: string; subscribed_at: string | null };
 
 const categories = ["Audio", "Car Accessories", "Smart Home", "Cables", "Lighting", "Other"];
@@ -63,6 +64,7 @@ export default function AdminDashboardClient({
   initialOrders,
   initialVendors,
   initialBlogPosts,
+  initialHeroSlides,
 }: {
   initialStats: { totalProducts: number; totalStock: number; subscribersCount: number; lowStock: number };
   initialProducts: Product[];
@@ -70,6 +72,7 @@ export default function AdminDashboardClient({
   initialOrders: AdminOrder[];
   initialVendors: Vendor[];
   initialBlogPosts: BlogPost[];
+  initialHeroSlides: HeroSlide[];
 }) {
   const [stats, setStats] = useState(initialStats);
   const [products, setProducts] = useState<Product[]>(initialProducts);
@@ -79,7 +82,11 @@ export default function AdminDashboardClient({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
-  const [tab, setTab] = useState<"products" | "seo" | "transactions" | "vendors" | "import" | "blog">("products");
+  const [tab, setTab] = useState<"products" | "seo" | "transactions" | "vendors" | "import" | "blog" | "hero">("products");
+  const [heroSlides, setHeroSlides] = useState<HeroSlide[]>(initialHeroSlides);
+  const [showHeroForm, setShowHeroForm] = useState(false);
+  const [editingHeroId, setEditingHeroId] = useState<string | null>(null);
+  const [heroForm, setHeroForm] = useState({ title: "", subtitle: "", badge: "New Arrival", cta_label: "Shop Now", cta_url: "/products", image_url: "", sort_order: "0", is_active: true });
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Product | AdminOrder | Vendor | null>(null);
@@ -585,6 +592,7 @@ export default function AdminDashboardClient({
         <nav className="p-4 space-y-1">
           {[
             { id: "products" as const, label: "Products", icon: Package },
+            { id: "hero" as const, label: "Hero Slides", icon: ImageIcon },
             { id: "seo" as const, label: "SEO Audit", icon: BarChart3 },
             { id: "transactions" as const, label: "Transactions", icon: ShoppingCart },
             { id: "blog" as const, label: "Blog", icon: FileText },
@@ -1986,6 +1994,169 @@ export default function AdminDashboardClient({
         </div>
       </section>
       )}
+
+      {/* ============ HERO SLIDES TAB ============ */}
+      {tab === "hero" && (
+      <section className="space-y-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-foreground">Hero Slides</h2>
+          <button
+            onClick={() => {
+              setEditingHeroId(null);
+              setHeroForm({ title: "", subtitle: "", badge: "New Arrival", cta_label: "Shop Now", cta_url: "/products", image_url: "", sort_order: String(heroSlides.length), is_active: true });
+              setShowHeroForm((v) => !v);
+            }}
+            className="flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-xs font-bold text-black hover:bg-neutral-200 transition-colors"
+          >
+            {showHeroForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+            {showHeroForm ? "Cancel" : "Add Slide"}
+          </button>
+        </div>
+
+        {showHeroForm && (
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setSaving(true);
+              try {
+                const fd = new FormData();
+                fd.set("title", heroForm.title);
+                fd.set("subtitle", heroForm.subtitle);
+                fd.set("badge", heroForm.badge);
+                fd.set("cta_label", heroForm.cta_label);
+                fd.set("cta_url", heroForm.cta_url);
+                fd.set("image_url", heroForm.image_url);
+                fd.set("sort_order", heroForm.sort_order);
+                fd.set("is_active", String(heroForm.is_active));
+                if (editingHeroId) {
+                  await updateHeroSlide(editingHeroId, fd);
+                  addToast("Slide updated!", "success");
+                } else {
+                  await createHeroSlide(fd);
+                  addToast("Slide created!", "success");
+                }
+                const fresh = await getHeroSlides();
+                setHeroSlides(fresh);
+                setShowHeroForm(false);
+                setEditingHeroId(null);
+              } catch (err: unknown) {
+                addToast(err instanceof Error ? err.message : "Failed", "error");
+              } finally {
+                setSaving(false);
+              }
+            }}
+            className="rounded-xl border border-default bg-card p-5 space-y-4"
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <input type="text" placeholder="Headline *" required value={heroForm.title} onChange={(e) => setHeroForm((f) => ({ ...f, title: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent" />
+              <input type="text" placeholder="Subtitle" value={heroForm.subtitle} onChange={(e) => setHeroForm((f) => ({ ...f, subtitle: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent" />
+              <input type="text" placeholder="Badge (e.g. New Arrival)" value={heroForm.badge} onChange={(e) => setHeroForm((f) => ({ ...f, badge: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent" />
+              <input type="url" placeholder="Image URL *" required value={heroForm.image_url} onChange={(e) => setHeroForm((f) => ({ ...f, image_url: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent" />
+              <input type="text" placeholder="CTA Label (e.g. Shop Now)" value={heroForm.cta_label} onChange={(e) => setHeroForm((f) => ({ ...f, cta_label: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent" />
+              <input type="text" placeholder="CTA Link (e.g. /products)" value={heroForm.cta_url} onChange={(e) => setHeroForm((f) => ({ ...f, cta_url: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent" />
+              <input type="number" placeholder="Sort Order" value={heroForm.sort_order} onChange={(e) => setHeroForm((f) => ({ ...f, sort_order: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent" />
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" checked={heroForm.is_active} onChange={(e) => setHeroForm((f) => ({ ...f, is_active: e.target.checked }))} className="h-4 w-4 rounded border-default bg-background accent-accent" />
+                <span className="text-sm text-foreground">Active</span>
+              </label>
+            </div>
+            {/* Image preview */}
+            {heroForm.image_url && (
+              <div className="relative w-full h-48 rounded-lg overflow-hidden border border-default">
+                <img src={heroForm.image_url} alt="Preview" className="w-full h-full object-cover" />
+              </div>
+            )}
+            <div className="flex justify-end gap-3 pt-2">
+              <button type="button" onClick={() => { setShowHeroForm(false); setEditingHeroId(null); }} className="rounded-lg border border-default px-5 py-2 text-xs font-medium text-muted hover:text-foreground transition-colors">Cancel</button>
+              <button type="submit" disabled={saving} className="rounded-lg bg-white px-5 py-2 text-xs font-bold text-black hover:bg-neutral-200 transition-colors disabled:opacity-50 flex items-center gap-2">
+                {saving && <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-black border-t-transparent" />}
+                {editingHeroId ? "Update Slide" : "Add Slide"}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* Slide cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {heroSlides.map((slide) => (
+            <div key={slide.id} className={`rounded-xl border bg-card overflow-hidden transition-all ${slide.is_active ? 'border-accent/40' : 'border-default opacity-60'}`}>
+              <div className="relative h-40 w-full">
+                <img src={slide.image_url} alt={slide.title} className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                <span className={`absolute top-2 right-2 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${slide.is_active ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                  {slide.is_active ? 'Active' : 'Inactive'}
+                </span>
+                <span className="absolute top-2 left-2 text-[10px] font-bold text-white/60 bg-black/40 px-2 py-0.5 rounded-full">#{slide.sort_order}</span>
+              </div>
+              <div className="p-4">
+                <h3 className="text-sm font-bold text-foreground truncate">{slide.title}</h3>
+                {slide.subtitle && <p className="text-xs text-muted-foreground truncate mt-1">{slide.subtitle}</p>}
+                <div className="flex items-center gap-2 mt-3">
+                  <button
+                    onClick={() => {
+                      setEditingHeroId(slide.id);
+                      setHeroForm({
+                        title: slide.title,
+                        subtitle: slide.subtitle || "",
+                        badge: slide.badge || "",
+                        cta_label: slide.cta_label || "Shop Now",
+                        cta_url: slide.cta_url || "/products",
+                        image_url: slide.image_url,
+                        sort_order: String(slide.sort_order),
+                        is_active: slide.is_active,
+                      });
+                      setShowHeroForm(true);
+                    }}
+                    className="flex items-center gap-1 text-xs text-muted hover:text-foreground transition-colors"
+                  >
+                    <Edit2 className="h-3 w-3" /> Edit
+                  </button>
+                  <button
+                    onClick={async () => {
+                      try {
+                        await toggleHeroSlide(slide.id, !slide.is_active);
+                        const fresh = await getHeroSlides();
+                        setHeroSlides(fresh);
+                        addToast(slide.is_active ? "Slide hidden" : "Slide activated", "success");
+                      } catch (err: unknown) {
+                        addToast(err instanceof Error ? err.message : "Failed", "error");
+                      }
+                    }}
+                    className="flex items-center gap-1 text-xs text-muted hover:text-foreground transition-colors"
+                  >
+                    <Eye className="h-3 w-3" /> {slide.is_active ? 'Hide' : 'Show'}
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (!confirm('Delete this slide?')) return;
+                      try {
+                        await deleteHeroSlide(slide.id);
+                        const fresh = await getHeroSlides();
+                        setHeroSlides(fresh);
+                        addToast("Slide deleted", "success");
+                      } catch (err: unknown) {
+                        addToast(err instanceof Error ? err.message : "Failed", "error");
+                      }
+                    }}
+                    className="flex items-center gap-1 text-xs text-muted hover:text-red-400 transition-colors ml-auto"
+                  >
+                    <Trash2 className="h-3 w-3" /> Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {heroSlides.length === 0 && (
+          <div className="rounded-xl border border-default bg-card p-10 text-center">
+            <ImageIcon className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+            <p className="text-sm text-muted-foreground">No hero slides yet. Add your first slide to create a stunning homepage.</p>
+          </div>
+        )}
+      </section>
+      )}
+
 
       {/* Subscribers Section (always visible below tabs) */}
       <section>

@@ -1,11 +1,29 @@
-"use client";
-
-import { useState } from "react";
+// ✅ Server Component — JSON-LD schema visible to Googlebot in raw HTML
+import type { Metadata } from "next";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import { Plus, Minus, HelpCircle, ChevronRight, MessageSquare } from "lucide-react";
+import FAQAccordion from "@/components/faq/FAQAccordion";
+import { ChevronRight, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { WHATSAPP_NUMBER } from "@/lib/config";
+
+export const metadata: Metadata = {
+  title: "FAQ — Frequently Asked Questions",
+  description:
+    "Common questions about ordering, delivery to Nairobi and upcountry, pay on delivery, M-PESA payment, and our 7-day replacement warranty at Trivo Kenya.",
+  alternates: {
+    canonical: "https://trivokenya.store/faq",
+  },
+  openGraph: {
+    title: "FAQ | Trivo Kenya",
+    description:
+      "How to order, delivery timelines, pay on delivery, M-PESA payment, and warranty — all your questions answered.",
+    url: "https://trivokenya.store/faq",
+    siteName: "Trivo Kenya",
+    locale: "en_KE",
+    type: "website",
+  },
+};
 
 const faqs = [
   {
@@ -34,6 +52,7 @@ const faqs = [
   },
 ];
 
+// ✅ FAQPage schema in server component — Googlebot reads this in raw HTML
 const faqSchema = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -48,14 +67,9 @@ const faqSchema = {
 };
 
 export default function FAQPage() {
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
-
-  const toggleFAQ = (index: number) => {
-    setOpenIndex(openIndex === index ? null : index);
-  };
-
   return (
     <>
+      {/* ✅ JSON-LD rendered server-side — visible to Googlebot */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
@@ -77,50 +91,16 @@ export default function FAQPage() {
           </h1>
 
           <p className="text-lg md:text-xl text-subtle mb-16 max-w-2xl leading-relaxed">
-            Have questions? We've got clear answers. Find out how our delivery works, how to pay, and our warranty details.
+            Have questions? We&apos;ve got clear answers. Find out how our delivery works, how to pay, and our warranty details.
           </p>
 
-          <div className="space-y-4 mb-16">
-            {faqs.map((faq, idx) => {
-              const isOpen = openIndex === idx;
-              return (
-                <div 
-                  key={idx}
-                  id={`faq-item-${idx + 1}`}
-                  className="rounded-2xl bg-card border border-subtle backdrop-blur-md overflow-hidden transition-all duration-300"
-                >
-                  <button
-                    onClick={() => toggleFAQ(idx)}
-                    className="w-full flex items-center justify-between p-6 text-left hover:bg-card-hover transition-colors focus:outline-none"
-                    aria-expanded={isOpen}
-                  >
-                    <span className="font-bold text-foreground pr-4 text-base md:text-lg flex items-center gap-3">
-                      <HelpCircle className="h-5 w-5 text-accent shrink-0" />
-                      {faq.q}
-                    </span>
-                    <span className="h-8 w-8 rounded-full bg-surface border border-default flex items-center justify-center text-subtle shrink-0">
-                      {isOpen ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                    </span>
-                  </button>
-
-                  <div 
-                    className={`transition-all duration-350 ease-in-out ${
-                      isOpen ? "max-h-[300px] border-t border-subtle opacity-100" : "max-h-0 opacity-0 pointer-events-none"
-                    }`}
-                  >
-                    <div className="p-6 text-sm text-subtle leading-relaxed bg-surface/10">
-                      {faq.a}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          {/* Client component handles accordion toggle */}
+          <FAQAccordion faqs={faqs} />
 
           <div className="text-center rounded-3xl bg-gradient-to-br from-accent/10 to-transparent border border-accent/25 p-8 md:p-12">
-            <h3 className="text-xl font-bold text-foreground mb-2">Have a question that's not listed here?</h3>
+            <h3 className="text-xl font-bold text-foreground mb-2">Have a question that&apos;s not listed here?</h3>
             <p className="text-muted-foreground text-sm mb-6 max-w-md mx-auto">
-              Feel free to message us on WhatsApp. Whether you want to check if a charger works with your phone, see real photos of an item, or arrange a specific delivery time, we're happy to help.
+              Feel free to message us on WhatsApp. Whether you want to check if a charger works with your phone, see real photos of an item, or arrange a specific delivery time, we&apos;re happy to help.
             </p>
             <a
               href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hey%20Trivo!%20I%20have%20a%20question%20that%20isn't%20listed%20in%20your%20FAQ.`}

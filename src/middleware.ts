@@ -15,13 +15,37 @@ export async function middleware(request: NextRequest) {
   response.headers.set("X-Frame-Options", "DENY");
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-response.headers.set(
+  response.headers.set(
     "Content-Security-Policy",
     "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://openrouter.ai; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'"
   );
 
   // Pass pathname to server components via custom header
   response.headers.set("x-next-url", request.nextUrl.pathname);
+
+  // ── X-Robots-Tag: noindex for private/utility pages ───────────────────────
+  // Prevents Google from crawling checkout, account, auth, receipt, wishlist
+  const noindexPaths = ["/checkout", "/receipt", "/account", "/auth", "/wishlist"];
+  if (noindexPaths.some((p) => request.nextUrl.pathname.startsWith(p))) {
+    response.headers.set("X-Robots-Tag", "noindex, nofollow");
+  }
+  // ── End noindex headers ────────────────────────────────────────────────────
+
+  // ── WordPress query-param URLs (410 Gone) ─────────────────────────────────
+  // ?p=123 and ?page_id=456 are WordPress post/page ID URLs — not valid here
+  const searchParams = request.nextUrl.searchParams;
+  if (searchParams.has("p") || searchParams.has("page_id")) {
+    return new NextResponse(null, { status: 410 });
+  }
+  // WordPress ?s= search → redirect to our /search page
+  if (searchParams.has("s") && !request.nextUrl.pathname.startsWith("/search")) {
+    const q = searchParams.get("s") || "";
+    return NextResponse.redirect(
+      new URL(`/search?q=${encodeURIComponent(q)}`, request.url),
+      { status: 301 }
+    );
+  }
+  // ── End WordPress query-param handling ────────────────────────────────────
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -68,16 +92,31 @@ response.headers.set(
   }
   // ── End UUID → Slug redirect ───────────────────────────────────────────────
 
-  // ── WooCommerce → Next.js URL redirects (301) ───────────────────────────────
+  // ── WooCommerce → Next.js URL redirects (301 / 410) ──────────────────────
   // Redirect old WordPress/WooCommerce URLs that Google may still have indexed.
   const oldWooPatterns: { regex: RegExp; to: (match: RegExpMatchArray) => string }[] = [
-    { regex: /^\/product\/(.+)/, to: () => "/products" },
+    // WooCommerce single product pages → try to redirect to matching slug
+    { regex: /^\/product\/([^/]+)\/?$/, to: (m) => `/products/${m[1]}` },
+    // WooCommerce shop pages
     { regex: /^\/shop\/(.+)/, to: () => "/products" },
     { regex: /^\/shop\/?$/, to: () => "/products" },
-    { regex: /^\/product-category\/(.+)/, to: (m) => `/categories/${m[1]}` },
+    // WooCommerce product categories → map to our categories
+    { regex: /^\/product-category\/([^/]+)/, to: (m) => `/categories/${m[1]}` },
+    // WooCommerce cart & checkout
+    { regex: /^\/cart\/?$/, to: () => "/products" },
+    // WooCommerce my-account
+    { regex: /^\/my-account\/?/, to: () => "/account" },
+    // WordPress author/tag archives
+    { regex: /^\/author\/.+/, to: () => "/about" },
+    { regex: /^\/tag\/.+/, to: () => "/blog" },
+    // WordPress paginated archive URLs
+    { regex: /^\/page\/\d+\/?$/, to: () => "/products" },
+    // WordPress core files — 410 Gone (tells Google to de-index immediately)
     { regex: /^\/wp-content\/.+/, to: () => "" },
     { regex: /^\/wp-includes\/.+/, to: () => "" },
     { regex: /^\/wp-json\/.+/, to: () => "" },
+    { regex: /^\/wp-admin\/?/, to: () => "" },
+    { regex: /^\/wp-login\.php/, to: () => "" },
     { regex: /^\/xmlrpc\.php/, to: () => "" },
     { regex: /^\/feed\/?/, to: () => "" },
     { regex: /^\/comments\/feed\/?/, to: () => "" },
@@ -95,7 +134,7 @@ response.headers.set(
     redirectUrl.search = request.nextUrl.search;
     return NextResponse.redirect(redirectUrl, { status: 301 });
   }
-  // ── End WooCommerce redirects ───────────────────────────────────────────────
+  // ── End WooCommerce redirects ─────────────────────────────────────────────
 
   const {
     data: { user },

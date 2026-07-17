@@ -1,64 +1,86 @@
-"use client";
-
-import { useState, useEffect } from "react";
+import type { Metadata } from "next";
+import { createClient } from "@/lib/supabase/server";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import Hero from "@/components/home/Hero";
 import ProductGrid from "@/components/product/ProductGrid";
-import { Package } from "lucide-react";
+import { Database } from "@/types/database.types";
 
-export default function Home() {
-  const [products, setProducts] = useState<Record<string, unknown>[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+type Product = Database["public"]["Tables"]["products"]["Row"];
 
-  useEffect(() => {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000);
+// ✅ SSR — Googlebot sees real product content in raw HTML
+export const dynamic = "force-dynamic";
 
-    fetch("/api/products", { signal: controller.signal })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.error) {
-          setError(true);
-        } else {
-          setProducts(data.products || []);
-        }
-      })
-      .catch(() => setError(true))
-      .finally(() => {
-        setLoading(false);
-        clearTimeout(timeout);
-      });
+// ✅ Let the layout's `default` title handle the homepage to avoid duplication
+// Layout default: "Trivo Kenya | Premium Tech Gadgets"
+export const metadata: Metadata = {
+  description:
+    "Shop genuine premium tech gadgets in Kenya. Wireless earbuds, smart home devices, car accessories, cables and more. Free delivery in Nairobi. Pay on delivery accepted.",
+  openGraph: {
+    title: "Trivo Kenya | Premium Tech Gadgets in Kenya",
+    description:
+      "Shop genuine premium tech gadgets in Kenya. Wireless earbuds, smart home devices, car accessories. Free Nairobi delivery. Pay on delivery.",
+    url: "https://trivokenya.store",
+    siteName: "Trivo Kenya",
+    locale: "en_KE",
+    type: "website",
+    images: [
+      {
+        url: "https://trivokenya.store/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Trivo Kenya — Premium Tech Gadgets",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Trivo Kenya | Premium Tech Gadgets in Kenya",
+    description:
+      "Genuine tech gadgets delivered to your door in Kenya. Free Nairobi delivery, pay on delivery.",
+    images: ["https://trivokenya.store/og-image.jpg"],
+  },
+  alternates: {
+    canonical: "https://trivokenya.store",
+  },
+  keywords: [
+    "buy gadgets Kenya",
+    "premium tech gadgets Kenya",
+    "wireless earbuds Kenya",
+    "smart home devices Kenya",
+    "car accessories Kenya",
+    "buy smartwatch Kenya",
+    "online gadget store Kenya",
+    "Trivo Kenya",
+    "free delivery Nairobi gadgets",
+    "pay on delivery Kenya tech",
+  ],
+};
 
-    return () => {
-      clearTimeout(timeout);
-      controller.abort();
-    };
-  }, []);
+export default async function Home() {
+  let products: Product[] = [];
 
-  const featuredProduct = products.find((p) => p.is_featured) || products[0] || null;
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("products")
+      .select("*")
+      .order("created_at", { ascending: false });
+    products = (data || []) as Product[];
+  } catch (e) {
+    console.error("Homepage fetch error:", e);
+  }
+
+  const featuredProduct =
+    (products.find((p) => p.is_featured) || products[0] || null) as Product | null;
 
   return (
     <>
       <Navbar />
       <main>
-        <Hero product={featuredProduct as never} />
+        <Hero product={featuredProduct} />
         <div id="products">
-          {loading ? (
-            <section className="py-24 text-center">
-              <div className="flex items-center justify-center">
-                <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-              </div>
-            </section>
-          ) : error ? (
-            <section className="py-24 text-center">
-              <Package className="h-12 w-12 text-muted-foreground/20 mx-auto mb-4" />
-              <p className="text-muted-foreground text-sm">Unable to load products right now. Please refresh the page.</p>
-            </section>
-          ) : (
-            <ProductGrid products={products as never} />
-          )}
+          <ProductGrid products={products as never} />
         </div>
       </main>
       <Footer />

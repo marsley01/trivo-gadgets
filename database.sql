@@ -107,7 +107,7 @@ CREATE TABLE IF NOT EXISTS public.vendors (
 );
 
 CREATE TABLE IF NOT EXISTS public.categories (
-    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
     slug TEXT NOT NULL UNIQUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

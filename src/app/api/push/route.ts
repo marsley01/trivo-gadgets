@@ -15,11 +15,13 @@ export async function POST(req: Request) {
     }
 
     const { title, body, url } = await req.json();
-    const { data: customer } = await supabase
+    const { data: customerData } = await supabase
       .from("customers")
       .select("id")
       .eq("user_id", user.id)
       .single();
+
+    const customer = customerData as any;
 
     if (!customer) {
       return NextResponse.json({ error: "Customer not found" }, { status: 404 });
@@ -28,7 +30,7 @@ export async function POST(req: Request) {
     const { data: subscriptions } = await supabase
       .from("notification_subscriptions")
       .select("subscription")
-      .eq("customer_id", customer.id);
+      .eq("customer_id", String(customer.id));
 
     if (!subscriptions?.length) {
       return NextResponse.json({ message: "No subscriptions" });

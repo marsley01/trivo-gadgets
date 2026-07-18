@@ -45,9 +45,9 @@ export async function POST(req: Request) {
     }
 
     await supabase.from("notification_subscriptions").insert({
-      customer_id: customer.id,
+      customer_id: String(customer.id),
       subscription,
-    });
+    } as any);
 
     return NextResponse.json({ success: true });
   } catch {

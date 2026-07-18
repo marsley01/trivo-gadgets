@@ -1,10 +1,10 @@
-import { getAdminStatsFull, getAdminProducts, getAdminSubscribers, getAllOrders, getVendors, getBlogPosts, getHeroSlides } from "@/lib/actions/admin";
+import { getAdminStatsFull, getAdminProducts, getAdminSubscribers, getAllOrders, getVendors, getBlogPosts, getHeroSlides, getCategories } from "@/lib/actions/admin";
 import AdminDashboardClient from "./AdminDashboardClient";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboard() {
-  const [stats, products, subscribers, orders, vendors, blogPosts, heroSlides] = await Promise.all([
+  const [stats, products, subscribers, orders, vendors, blogPosts, heroSlides, categories] = await Promise.all([
     getAdminStatsFull(),
     getAdminProducts(),
     getAdminSubscribers(),
@@ -12,6 +12,7 @@ export default async function AdminDashboard() {
     getVendors(),
     getBlogPosts(),
     getHeroSlides(),
+    getCategories(),
   ]);
 
   return (
@@ -23,6 +24,7 @@ export default async function AdminDashboard() {
       initialVendors={vendors}
       initialBlogPosts={blogPosts}
       initialHeroSlides={heroSlides}
+      initialCategories={categories}
     />
   );
 }

@@ -106,6 +106,23 @@ CREATE TABLE IF NOT EXISTS public.vendors (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS public.categories (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    slug TEXT NOT NULL UNIQUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Public read access for categories" ON public.categories 
+    FOR SELECT USING (true);
+
+CREATE POLICY "Admin full access for categories" ON public.categories 
+    FOR ALL USING (
+        auth.jwt() ->> 'email' IN (SELECT email FROM admin_users)
+    );
+
 -- Add vendor_id to products if missing (separate from CREATE TABLE for idempotency)
 ALTER TABLE public.products ADD COLUMN IF NOT EXISTS vendor_id UUID;
 

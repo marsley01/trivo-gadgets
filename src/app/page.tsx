@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
-import { createClient } from "@/lib/supabase/server";
+import { unstable_cache } from "next/cache";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { Database } from "@/types/database.types";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import HeroSlideshow from "@/components/home/HeroSlideshow";
@@ -9,8 +11,32 @@ import { Database } from "@/types/database.types";
 type Product = Database["public"]["Tables"]["products"]["Row"];
 type HeroSlide = Database["public"]["Tables"]["hero_slides"]["Row"];
 
-// ✅ SSR — Googlebot sees real product content in raw HTML
-export const dynamic = "force-dynamic";
+// Revalidate every hour just in case tags fail, but primary cache clearing is via tags.
+export const revalidate = 3600;
+
+// Create a static client for public data fetching so it doesn't access cookies (which breaks static rendering)
+const supabase = createSupabaseClient<Database>(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+const getCachedProducts = unstable_cache(
+  async () => {
+    const { data } = await supabase.from("products").select("*").order("created_at", { ascending: false });
+    return (data || []) as Product[];
+  },
+  ["products-homepage"],
+  { tags: ["products"] }
+);
+
+const getCachedHeroSlides = unstable_cache(
+  async () => {
+    const { data } = await supabase.from("hero_slides").select("*").eq("is_active", true).order("sort_order", { ascending: true });
+    return (data || []) as HeroSlide[];
+  },
+  ["hero-slides-homepage"],
+  { tags: ["hero_slides"] }
+);
 
 // ✅ Let the layout's `default` title handle the homepage to avoid duplication
 // Layout default: "Trivo Kenya | Premium Tech Gadgets"
@@ -63,22 +89,13 @@ export default async function Home() {
   let heroSlides: HeroSlide[] = [];
 
   try {
-    const supabase = await createClient();
-
     const [productsRes, slidesRes] = await Promise.all([
-      supabase
-        .from("products")
-        .select("*")
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("hero_slides")
-        .select("*")
-        .eq("is_active", true)
-        .order("sort_order", { ascending: true }),
+      getCachedProducts(),
+      getCachedHeroSlides(),
     ]);
 
-    products = (productsRes.data || []) as Product[];
-    heroSlides = (slidesRes.data || []) as HeroSlide[];
+    products = productsRes;
+    heroSlides = slidesRes;
   } catch (e) {
     console.error("Homepage fetch error:", e);
   }

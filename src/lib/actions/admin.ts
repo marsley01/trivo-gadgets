@@ -3,7 +3,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@/lib/supabase/server";
 import { Database, type Json } from "@/types/database.types";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { upscaleImage } from "@/lib/upscale";
 import sanitizeHtml from "sanitize-html";
 import crypto from "crypto";
@@ -216,6 +216,7 @@ export async function createProduct(formData: FormData) {
 
   if (error) throw new Error(error.message);
   revalidatePath("/", "layout");
+  revalidateTag("products");
 }
 
 export async function updateProduct(id: string, formData: FormData) {
@@ -297,6 +298,7 @@ export async function updateProduct(id: string, formData: FormData) {
 
   if (error) throw new Error(error.message);
   revalidatePath("/", "layout");
+  revalidateTag("products");
 }
 
 export async function deleteProduct(id: string) {
@@ -305,6 +307,7 @@ export async function deleteProduct(id: string) {
   const { error } = await supabase.from("products").delete().eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/", "layout");
+  revalidateTag("products");
 }
 
 export async function getAdminStats() {
@@ -480,8 +483,7 @@ export async function deleteOrder(orderId: string) {
 
   const { error } = await supabase
     .from("admin_orders")
-    .delete()
-    .eq("id", orderId);
+    .delete().eq("id", orderId);
 
   if (error) throw new Error(error.message);
 }
@@ -741,6 +743,34 @@ export async function toggleHeroSlide(id: string, is_active: boolean) {
   await verifyAdminAuth();
   const supabase = getAdminClient();
   const { error } = await supabase.from("hero_slides").update({ is_active }).eq("id", id);
-  if (error) throw new Error(error.message);
+  if (error) throw new Error(`Database error: ${error.message}`);
   revalidatePath("/");
+  revalidatePath("/admin");
+  revalidateTag("hero_slides");
+}
+
+export async function getCategories() {
+  await verifyAdminAuth();
+  const supabase = getAdminClient();
+  const { data, error } = await supabase.from("categories").select("*").order("name");
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+export async function createCategory(name: string) {
+  await verifyAdminAuth();
+  const supabase = getAdminClient();
+  if (!name.trim()) throw new Error("Category name is required");
+  const slug = slugify(name);
+  const { error } = await supabase.from("categories").insert([{ name: name.trim(), slug }]);
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin");
+}
+
+export async function deleteCategory(id: string) {
+  await verifyAdminAuth();
+  const supabase = getAdminClient();
+  const { error } = await supabase.from("categories").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin");
 }

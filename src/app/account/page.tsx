@@ -11,18 +11,20 @@ export default async function AccountPage() {
 
   if (!user?.id) redirect("/auth/login");
 
-  const { data: customer } = await supabase
+  const { data: customerData } = await supabase
     .from("customers")
     .select("*")
     .eq("user_id", user.id)
     .single();
 
+  const customer = customerData as any;
   const customerId = customer?.id ?? "";
-  const { data: orders } = await supabase
+  const { data: ordersData } = await supabase
     .from("orders")
     .select("*")
     .eq("customer_id", customerId)
     .order("created_at", { ascending: false });
+  const orders = ordersData as any[] | null;
 
   const orderCount = orders?.length || 0;
   const totalSpent = orders?.reduce((sum, o) => sum + o.total, 0) || 0;

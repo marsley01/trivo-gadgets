@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
     const errors: string[] = [];
 
     // First check if exec_sql exists
-    const { error: execCheck } = await supabase.rpc("exec_sql", { query: "SELECT 1" });
+    const { error: execCheck } = await (supabase as any).rpc("exec_sql", { query: "SELECT 1" });
     if (execCheck) {
       return NextResponse.json({
         status: "semi",
@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
         continue;
       }
 
-      const { error } = await supabase.rpc("exec_sql", { query: stmt });
+      const { error } = await (supabase as any).rpc("exec_sql", { query: stmt });
       if (error) {
         if (
           error.message?.toLowerCase().includes("already exists") ||

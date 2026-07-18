@@ -1,4 +1,10 @@
 {
   "regions": ["lhr1"],
-  "installCommand": "npm install --include=optional"
+  "installCommand": "npm install --include=optional",
+  "crons": [
+    {
+      "path": "/api/cron/auto-blog",
+      "schedule": "0 0 * * *"
+    }
+  ]
 }

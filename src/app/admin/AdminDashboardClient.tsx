@@ -3,19 +3,18 @@
 import { useState, useCallback, useEffect } from "react";
 import Image from "next/image";
 import { Database } from "@/types/database.types";
-import { getAdminStatsFull, getAllOrders, getVendors, createProduct, updateProduct, deleteProduct, updateOrderStatus, createVendor, updateVendor, deleteVendor, createOrder, deleteOrder, createBlogPost, updateBlogPost, deleteBlogPost, getBlogPosts, getHeroSlides, createHeroSlide, updateHeroSlide, deleteHeroSlide, toggleHeroSlide } from "@/lib/actions/admin";
+import { getAdminStatsFull, getAllOrders, getVendors, createProduct, updateProduct, deleteProduct, updateOrderStatus, createVendor, updateVendor, deleteVendor, createOrder, deleteOrder, createBlogPost, updateBlogPost, deleteBlogPost, getBlogPosts, getHeroSlides, createHeroSlide, updateHeroSlide, deleteHeroSlide, toggleHeroSlide, getCategories, createCategory, deleteCategory } from "@/lib/actions/admin";
 import { sendReceiptEmail } from "@/lib/email/receipt";
 import { analyzeProductSEO, getGradeColor, getGradeBg } from "@/lib/seo";
-import { Package, Users, AlertTriangle, PackageOpen, Plus, X, Edit2, Trash2, BarChart3, DollarSign, ShoppingCart, Truck, Send, Eye, ExternalLink, Download, Loader2, ChevronLeft, ChevronDown, ChevronUp, Menu, LogOut, Settings2, Sparkles, FileText, Calendar, Image as ImageIcon } from "lucide-react";
+import { Package, Users, AlertTriangle, PackageOpen, Plus, X, Edit2, Trash2, BarChart3, DollarSign, ShoppingCart, Truck, Send, Eye, ExternalLink, Download, Loader2, ChevronLeft, ChevronDown, ChevronUp, Menu, LogOut, Settings2, Sparkles, FileText, Calendar, Image as ImageIcon, FolderOpen } from "lucide-react";
 
 type Product = Database["public"]["Tables"]["products"]["Row"];
 type BlogPost = Database["public"]["Tables"]["blog_posts"]["Row"];
 type AdminOrder = Database["public"]["Tables"]["admin_orders"]["Row"];
 type Vendor = Database["public"]["Tables"]["vendors"]["Row"];
 type HeroSlide = Database["public"]["Tables"]["hero_slides"]["Row"];
+type Category = { id: string; name: string; slug: string; created_at: string; };
 type Subscriber = { email: string; subscribed_at: string | null };
-
-const categories = ["Audio", "Car Accessories", "Smart Home", "Cables", "Lighting", "Other"];
 
 const emptyForm = {
   name: "",
@@ -65,6 +64,7 @@ export default function AdminDashboardClient({
   initialVendors,
   initialBlogPosts,
   initialHeroSlides,
+  initialCategories,
 }: {
   initialStats: { totalProducts: number; totalStock: number; subscribersCount: number; lowStock: number };
   initialProducts: Product[];
@@ -73,6 +73,7 @@ export default function AdminDashboardClient({
   initialVendors: Vendor[];
   initialBlogPosts: BlogPost[];
   initialHeroSlides: HeroSlide[];
+  initialCategories: Category[];
 }) {
   const [stats, setStats] = useState(initialStats);
   const [products, setProducts] = useState<Product[]>(initialProducts);
@@ -82,8 +83,11 @@ export default function AdminDashboardClient({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
-  const [tab, setTab] = useState<"products" | "seo" | "transactions" | "vendors" | "import" | "blog" | "hero">("products");
+  const [tab, setTab] = useState<"products" | "seo" | "transactions" | "vendors" | "import" | "blog" | "hero" | "categories">("products");
   const [heroSlides, setHeroSlides] = useState<HeroSlide[]>(initialHeroSlides);
+  const [categories, setCategories] = useState<Category[]>(initialCategories);
+  const [showCategoryForm, setShowCategoryForm] = useState(false);
+  const [categoryForm, setCategoryForm] = useState({ name: "" });
   const [showHeroForm, setShowHeroForm] = useState(false);
   const [editingHeroId, setEditingHeroId] = useState<string | null>(null);
   const [heroForm, setHeroForm] = useState({ title: "", subtitle: "", badge: "New Arrival", cta_label: "Shop Now", cta_url: "/products", image_url: "", sort_order: "0", is_active: true });
@@ -592,6 +596,7 @@ export default function AdminDashboardClient({
         <nav className="p-4 space-y-1">
           {[
             { id: "products" as const, label: "Products", icon: Package },
+            { id: "categories" as const, label: "Categories", icon: FolderOpen },
             { id: "hero" as const, label: "Hero Slides", icon: ImageIcon },
             { id: "seo" as const, label: "SEO Audit", icon: BarChart3 },
             { id: "transactions" as const, label: "Transactions", icon: ShoppingCart },
@@ -696,7 +701,7 @@ export default function AdminDashboardClient({
               <div>
                 <select value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-accent">
                   <option value="">Category</option>
-                  {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+                  {categories.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
                 </select>
               </div>
               <div className="md:col-span-2 lg:col-span-3 space-y-2">
@@ -712,7 +717,45 @@ export default function AdminDashboardClient({
               <span className="text-xs text-muted">Set as Featured (unfeatures all others)</span>
             </label>
             <div className="border-t border-default pt-4 mt-2">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">SEO Settings</h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">SEO Settings</h3>
+                <button 
+                  type="button" 
+                  disabled={aiLoading}
+                  onClick={async () => {
+                    if (!form.name) {
+                      addToast("Please provide a product name first", "error");
+                      return;
+                    }
+                    setAiLoading(true);
+                    try {
+                      const res = await fetch("/api/admin/ai-generate", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ prompt: form.name + (form.description ? " - " + form.description.substring(0, 500) : "") }),
+                      });
+                      const data = await res.json();
+                      if (!res.ok) throw new Error(data.error || "Generation failed");
+                      setForm(f => ({
+                        ...f,
+                        seo_title: data.seo_title || f.seo_title,
+                        seo_description: data.seo_description || f.seo_description,
+                        focus_keyword: data.focus_keyword || f.focus_keyword,
+                        secondary_keywords: data.secondary_keywords || f.secondary_keywords
+                      }));
+                      addToast("SEO fields optimized!", "success");
+                    } catch (err: unknown) {
+                      addToast(err instanceof Error ? err.message : "SEO optimization failed", "error");
+                    } finally {
+                      setAiLoading(false);
+                    }
+                  }}
+                  className="rounded-lg bg-gradient-to-r from-purple-600 to-pink-500 px-3 py-1.5 text-[10px] font-bold text-white shadow hover:from-purple-500 hover:to-pink-400 disabled:opacity-50 flex items-center gap-1.5 transition-all"
+                >
+                  {aiLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                  {aiLoading ? "Optimizing..." : "Optimize SEO with AI"}
+                </button>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="md:col-span-2 lg:col-span-3">
                   <input type="text" placeholder="SEO Title (55-65 chars)" value={form.seo_title} onChange={(e) => setForm((f) => ({ ...f, seo_title: e.target.value }))} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent" />
@@ -1589,7 +1632,7 @@ export default function AdminDashboardClient({
                   className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-accent"
                 >
                   <option value="">Select category</option>
-                  {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+                  {categories.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
                 </select>
               </div>
 
@@ -1778,16 +1821,27 @@ export default function AdminDashboardClient({
                       if (data.error) {
                         addToast(data.error, "error");
                       } else {
-                        setBlogForm((f) => ({
-                          ...f,
-                          title: data.title || f.title,
-                          slug: data.slug || f.slug,
-                          excerpt: data.excerpt || f.excerpt,
-                          content: data.content || f.content,
-                          seo_title: data.seo_title || f.seo_title,
-                          seo_description: data.seo_description || f.seo_description,
-                        }));
-                        addToast("Blog post generated!", "success");
+                        const fd = new FormData();
+                        fd.set("title", data.title || blogForm.title);
+                        fd.set("slug", data.slug || blogForm.slug);
+                        fd.set("content", data.content || blogForm.content);
+                        fd.set("excerpt", data.excerpt || blogForm.excerpt);
+                        fd.set("cover_image_url", blogForm.cover_image_url);
+                        fd.set("seo_title", data.seo_title || blogForm.seo_title);
+                        fd.set("seo_description", data.seo_description || blogForm.seo_description);
+                        fd.set("related_product_ids", JSON.stringify(blogForm.related_product_ids));
+                        fd.set("published_at", blogForm.published_at);
+                        
+                        try {
+                          await createBlogPost(fd);
+                          addToast("Blog post auto-generated and saved!", "success");
+                          setShowBlogForm(false);
+                          setEditingBlogId(null);
+                          await refresh();
+                        } catch (saveErr: unknown) {
+                          const message = saveErr instanceof Error ? saveErr.message : "Failed to save generated post";
+                          addToast(message, "error");
+                        }
                       }
                     } catch (err: unknown) {
                       const msg = err instanceof Error ? err.message : "Generation failed";
@@ -2154,6 +2208,100 @@ export default function AdminDashboardClient({
             <p className="text-sm text-muted-foreground">No hero slides yet. Add your first slide to create a stunning homepage.</p>
           </div>
         )}
+      </section>
+      )}
+
+      {/* ============ CATEGORIES TAB ============ */}
+      {tab === "categories" && (
+      <section className="space-y-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-foreground">Categories</h2>
+          <button
+            onClick={() => {
+              setCategoryForm({ name: "" });
+              setShowCategoryForm((v) => !v);
+            }}
+            className="flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-xs font-bold text-black hover:bg-neutral-200 transition-colors"
+          >
+            {showCategoryForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+            {showCategoryForm ? "Cancel" : "Add Category"}
+          </button>
+        </div>
+
+        {showCategoryForm && (
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setSaving(true);
+              try {
+                await createCategory(categoryForm.name);
+                addToast("Category created!", "success");
+                const fresh = await getCategories();
+                setCategories(fresh);
+                setShowCategoryForm(false);
+              } catch (err: unknown) {
+                addToast(err instanceof Error ? err.message : "Failed to create category", "error");
+              } finally {
+                setSaving(false);
+              }
+            }}
+            className="rounded-xl border border-default bg-card p-5 space-y-4 max-w-xl"
+          >
+            <div>
+              <input type="text" placeholder="Category Name (e.g. Smart Watches)" required value={categoryForm.name} onChange={(e) => setCategoryForm({ name: e.target.value })} className="w-full bg-background border border-default rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent" />
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <button type="button" onClick={() => setShowCategoryForm(false)} className="rounded-lg border border-default px-5 py-2 text-xs font-medium text-muted hover:text-foreground transition-colors">Cancel</button>
+              <button type="submit" disabled={saving} className="rounded-lg bg-white px-5 py-2 text-xs font-bold text-black hover:bg-neutral-200 transition-colors disabled:opacity-50 flex items-center gap-2">
+                {saving && <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-black border-t-transparent" />}
+                Add Category
+              </button>
+            </div>
+          </form>
+        )}
+
+        <div className="overflow-x-auto rounded-xl border border-default bg-card max-w-4xl">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-surface text-xs uppercase text-muted-foreground border-b border-default">
+              <tr>
+                <th className="px-4 py-3">Name</th>
+                <th className="px-4 py-3">Slug</th>
+                <th className="px-4 py-3">Products Count</th>
+                <th className="px-4 py-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {categories.map((cat) => (
+                <tr key={cat.id} className="border-b border-subtle hover:bg-surface/20 transition-colors">
+                  <td className="px-4 py-3 font-medium text-foreground">{cat.name}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{cat.slug}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{products.filter(p => p.category === cat.name).length}</td>
+                  <td className="px-4 py-3 text-right">
+                    <button
+                      onClick={async () => {
+                        if (!confirm('Are you sure you want to delete this category? Products in this category will keep the string value but might not appear in filters correctly.')) return;
+                        try {
+                          await deleteCategory(cat.id);
+                          const fresh = await getCategories();
+                          setCategories(fresh);
+                          addToast("Category deleted", "success");
+                        } catch (err: unknown) {
+                          addToast(err instanceof Error ? err.message : "Failed to delete", "error");
+                        }
+                      }}
+                      className="inline-flex items-center gap-1 text-xs text-muted hover:text-red-400 transition-colors"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" /> Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {categories.length === 0 && (
+                <tr><td colSpan={4} className="px-4 py-10 text-center text-sm text-muted-foreground">No categories yet.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </section>
       )}
 

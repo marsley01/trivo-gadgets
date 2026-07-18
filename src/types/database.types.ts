@@ -459,6 +459,26 @@ export type Database = {
         }
         Returns: undefined
       }
+      categories: {
+        Row: {
+          id: string
+          name: string
+          slug: string
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          slug: string
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          slug?: string
+          created_at?: string | null
+        }
+      }
     }
   }
 }

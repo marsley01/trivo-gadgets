@@ -20,16 +20,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Subscription required" }, { status: 400 });
     }
 
-    const { data: customer } = await supabase
+    const { data: customerData } = await supabase
       .from("customers")
       .select("id")
       .eq("user_id", user.id)
       .single();
 
+    const customer = customerData as any;
+
     if (!customer) {
       return NextResponse.json({ error: "Customer not found" }, { status: 404 });
     }
 
+    // Check if subscription already exists
     const { data: existing } = await supabase
       .from("notification_subscriptions")
       .select("id")

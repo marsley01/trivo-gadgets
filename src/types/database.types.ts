@@ -450,21 +450,12 @@ export type Database = {
         }
         Relationships: []
       }
-    }
-    Views: Record<string, never>
-    Functions: {
-      exec_sql: {
-        Args: {
-          query: string
-        }
-        Returns: undefined
-      }
       categories: {
         Row: {
           id: string
           name: string
           slug: string
-          created_at: string | null
+          created_at: string
         }
         Insert: {
           id?: string
@@ -478,6 +469,16 @@ export type Database = {
           slug?: string
           created_at?: string | null
         }
+        Relationships: []
+      }
+    }
+    Views: Record<string, never>
+    Functions: {
+      exec_sql: {
+        Args: {
+          query: string
+        }
+        Returns: undefined
       }
     }
   }

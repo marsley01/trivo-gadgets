@@ -6,7 +6,6 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import HeroSlideshow from "@/components/home/HeroSlideshow";
 import ProductGrid from "@/components/product/ProductGrid";
-import { Database } from "@/types/database.types";
 
 type Product = Database["public"]["Tables"]["products"]["Row"];
 type HeroSlide = Database["public"]["Tables"]["hero_slides"]["Row"];

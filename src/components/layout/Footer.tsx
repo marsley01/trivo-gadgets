@@ -92,11 +92,11 @@ export default function Footer() {
           <div className="space-y-4">
             <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">Shop Collections</h4>
             <ul className="space-y-2.5 text-xs text-muted-foreground">
-              <li><Link href="/products" className="hover:text-accent transition-colors font-semibold">All Products</Link></li>
-              <li><Link href="/categories/audio" className="hover:text-accent transition-colors">Audio Equipment</Link></li>
-              <li><Link href="/categories/car-accessories" className="hover:text-accent transition-colors">Car Upgrades</Link></li>
-              <li><Link href="/categories/smart-home" className="hover:text-accent transition-colors">Smart Home Tech</Link></li>
-              <li><Link href="/categories/cables" className="hover:text-accent transition-colors">Cables & Charging</Link></li>
+              <li><Link href="/products" className="hover:text-accent transition-colors font-semibold">All Products in Kenya</Link></li>
+              <li><Link href="/categories/car-accessories" className="hover:text-accent transition-colors">Car Accessories in Kenya</Link></li>
+              <li><Link href="/categories/audio" className="hover:text-accent transition-colors">Audio & Earbuds in Kenya</Link></li>
+              <li><Link href="/categories/smart-home" className="hover:text-accent transition-colors">Smart Home Tech in Kenya</Link></li>
+              <li><Link href="/categories/cables" className="hover:text-accent transition-colors">Fast Chargers & Cables in Kenya</Link></li>
             </ul>
           </div>
 

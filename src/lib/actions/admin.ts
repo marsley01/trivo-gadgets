@@ -216,7 +216,7 @@ export async function createProduct(formData: FormData) {
 
   if (error) throw new Error(error.message);
   revalidatePath("/", "layout");
-  revalidateTag("products");
+  (revalidateTag as any)("products");
 }
 
 export async function updateProduct(id: string, formData: FormData) {
@@ -298,7 +298,7 @@ export async function updateProduct(id: string, formData: FormData) {
 
   if (error) throw new Error(error.message);
   revalidatePath("/", "layout");
-  revalidateTag("products");
+  (revalidateTag as any)("products");
 }
 
 export async function deleteProduct(id: string) {
@@ -307,7 +307,7 @@ export async function deleteProduct(id: string) {
   const { error } = await supabase.from("products").delete().eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/", "layout");
-  revalidateTag("products");
+  (revalidateTag as any)("products");
 }
 
 export async function getAdminStats() {
@@ -746,7 +746,7 @@ export async function toggleHeroSlide(id: string, is_active: boolean) {
   if (error) throw new Error(`Database error: ${error.message}`);
   revalidatePath("/");
   revalidatePath("/admin");
-  revalidateTag("hero_slides");
+  (revalidateTag as any)("hero_slides");
 }
 
 export async function getCategories() {

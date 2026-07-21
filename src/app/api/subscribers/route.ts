@@ -26,8 +26,8 @@ export async function POST(req: Request) {
 
     const supabase = await createClient();
 
-    const { error: dbError } = await supabase
-      .from("subscribers")
+    const { error: dbError } = await (supabase
+      .from("subscribers") as any)
       .insert([{ email }]);
 
     if (dbError) {

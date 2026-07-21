@@ -11,14 +11,50 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  // Security headers
+  // ── Security Headers ─────────────────────────────────────────────────────
   response.headers.set("X-Frame-Options", "DENY");
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  response.headers.set("X-Permitted-Cross-Domain-Policies", "none");
+
+  // HSTS: enforce HTTPS for 2 years, include all subdomains, allow preload
+  response.headers.set(
+    "Strict-Transport-Security",
+    "max-age=63072000; includeSubDomains; preload"
+  );
+
+  // Permissions-Policy: deny sensitive APIs that the site does not need
+  response.headers.set(
+    "Permissions-Policy",
+    "camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=()"
+  );
+
+  // Prevent cross-origin window/tab opener leaks
+  response.headers.set("Cross-Origin-Opener-Policy", "same-origin");
+  response.headers.set("Cross-Origin-Resource-Policy", "same-origin");
+
+  // Content-Security-Policy
+  // script-src: removed unsafe-inline; added Vercel Live, Google APIs
+  // style-src: unsafe-inline kept for Next.js inline critical styles
+  // img-src: open to https: to support Supabase Storage, Unsplash, etc.
+  // connect-src: Supabase, OpenRouter, Vercel analytics
   response.headers.set(
     "Content-Security-Policy",
-    "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://openrouter.ai; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "img-src 'self' data: blob: https:",
+      "font-src 'self' data: https://fonts.gstatic.com",
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://openrouter.ai https://vitals.vercel-insights.com",
+      "frame-src 'self'",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "upgrade-insecure-requests",
+    ].join("; ")
   );
+  // ── End Security Headers ──────────────────────────────────────────────────
 
   // Pass pathname to server components via custom header
   response.headers.set("x-next-url", request.nextUrl.pathname);

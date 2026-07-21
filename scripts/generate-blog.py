@@ -1,18 +1,41 @@
+"""
+generate-blog.py — Fully automated blog post generator for Trivo Kenya.
+
+Usage:
+  # Fully automatic: picks a random uncovered product from Supabase and saves it
+  python generate-blog.py --auto
+
+  # Generate for a specific product name (saves to Supabase automatically)
+  python generate-blog.py --product "Xiaomi Redmi Note 14 Pro"
+
+  # Generate with full details
+  python generate-blog.py --product "Samsung Galaxy S25" --desc "Flagship Android" --specs '{"RAM":"12GB","Storage":"256GB"}'
+
+  # Dry-run: generate but do NOT save to Supabase, only write a local JSON file
+  python generate-blog.py --product "Test Product" --dry-run
+
+Environment variables required:
+  OPENROUTER_API_KEY       — OpenRouter API key
+  NEXT_PUBLIC_SUPABASE_URL — Supabase project URL
+  SUPABASE_SERVICE_ROLE_KEY — Supabase service role key (bypasses RLS)
+"""
+
 import json
 import os
 import sys
 import urllib.request
-import urllib.parse
 import urllib.error
 import re
-from datetime import datetime
+import random
+import string
+from datetime import datetime, timezone
 
 
+# ── Configuration ──────────────────────────────────────────────────────────────
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 SUPABASE_URL = os.environ.get("NEXT_PUBLIC_SUPABASE_URL", "")
-SUPABASE_ANON_KEY = os.environ.get("NEXT_PUBLIC_SUPABASE_ANON_KEY", "")
-
-UNSPLASH_ACCESS_KEY = os.environ.get("UNSPLASH_ACCESS_KEY", "")
+# Use SERVICE_ROLE_KEY — the anon key is RLS-restricted and cannot write blog_posts
+SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
 
 SYSTEM_PROMPT = """You are an expert tech blog writer for Trivo Kenya (trivokenya.store), a premium gadgets store in Nairobi, Kenya. Your job is to write engaging, informative blog posts about tech products that rank on Google Kenya.
 
@@ -48,12 +71,76 @@ Return ONLY valid JSON with these fields: title, slug, excerpt, content, seo_tit
 No markdown formatting, no code fences, just raw JSON."""
 
 
+# ── Helpers ────────────────────────────────────────────────────────────────────
+def slugify(text: str) -> str:
+    text = text.lower().strip()
+    text = re.sub(r"[^a-z0-9]+", "-", text)
+    text = re.sub(r"(^-|-$)", "", text)
+    return text[:80]
+
+
+def random_suffix(n: int = 4) -> str:
+    return "".join(random.choices(string.ascii_lowercase + string.digits, k=n))
+
+
+def supabase_request(method: str, path: str, payload: dict | None = None) -> tuple[int, dict | list | None]:
+    """Make an authenticated request to Supabase REST API using the service role key."""
+    if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
+        raise EnvironmentError("NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set")
+
+    url = f"{SUPABASE_URL}/rest/v1{path}"
+    data = json.dumps(payload).encode("utf-8") if payload else None
+
+    req = urllib.request.Request(
+        url,
+        data=data,
+        headers={
+            "apikey": SUPABASE_SERVICE_ROLE_KEY,
+            "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
+            "Content-Type": "application/json",
+            "Prefer": "return=representation",
+        },
+        method=method,
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            body = json.loads(resp.read().decode("utf-8"))
+            return resp.status, body
+    except urllib.error.HTTPError as e:
+        body_text = e.read().decode("utf-8", errors="replace")
+        print(f"Supabase HTTP {e.code}: {body_text}", file=sys.stderr)
+        return e.code, None
+    except Exception as exc:
+        print(f"Supabase request error: {exc}", file=sys.stderr)
+        return 0, None
+
+
+def get_uncovered_products() -> list[dict]:
+    """Fetch products that do NOT yet have a blog post, for deduplication."""
+    # Get all existing blog post product IDs
+    status, posts = supabase_request("GET", "/blog_posts?select=related_product_ids&limit=1000")
+    covered_ids: set[str] = set()
+    if status == 200 and isinstance(posts, list):
+        for post in posts:
+            ids = post.get("related_product_ids") or []
+            covered_ids.update(ids)
+
+    # Fetch products
+    status, products = supabase_request("GET", "/products?select=id,name,description,category,price,specs&limit=100")
+    if status != 200 or not isinstance(products, list):
+        return []
+
+    uncovered = [p for p in products if p.get("id") not in covered_ids]
+    return uncovered if uncovered else products  # fall back to all if all covered
+
+
 def call_openrouter(prompt: str) -> str | None:
     if not OPENROUTER_API_KEY:
-        print("Error: OPENROUTER_API_KEY environment variable not set.", file=sys.stderr)
+        print("Error: OPENROUTER_API_KEY not set.", file=sys.stderr)
         return None
 
-    data = json.dumps({
+    payload = json.dumps({
         "model": "google/gemini-2.5-flash",
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
@@ -64,7 +151,7 @@ def call_openrouter(prompt: str) -> str | None:
 
     req = urllib.request.Request(
         "https://openrouter.ai/api/v1/chat/completions",
-        data=data,
+        data=payload,
         headers={
             "Authorization": f"Bearer {OPENROUTER_API_KEY}",
             "Content-Type": "application/json",
@@ -74,126 +161,144 @@ def call_openrouter(prompt: str) -> str | None:
     )
 
     try:
-        with urllib.request.urlopen(req, timeout=60) as resp:
+        with urllib.request.urlopen(req, timeout=90) as resp:
             result = json.loads(resp.read().decode("utf-8"))
             return result["choices"][0]["message"]["content"]
-    except Exception as e:
-        print(f"OpenRouter API error: {e}", file=sys.stderr)
+    except Exception as exc:
+        print(f"OpenRouter API error: {exc}", file=sys.stderr)
         return None
 
 
-def slugify(text: str) -> str:
-    text = text.lower().strip()
-    text = re.sub(r"[^a-z0-9]+", "-", text)
-    text = re.sub(r"(^-|-$)", "", text)
-    return text[:100]
-
-
 def generate_blog_post(product_info: str) -> dict | None:
-    prompt = f"Write a detailed SEO-optimized blog post for this tech product:\n\n{product_info}\n\nMake it informative, engaging for Kenyan readers, and include real specifications and buying advice."
+    prompt = (
+        f"Write a detailed SEO-optimized blog post for this tech product:\n\n"
+        f"{product_info}\n\n"
+        f"Make it informative, engaging for Kenyan readers, and include real specifications and buying advice."
+    )
 
     raw = call_openrouter(prompt)
     if not raw:
         return None
 
-    cleaned = raw.replace("```json", "").replace("```", "").strip()
+    cleaned = re.sub(r"```json\s*", "", raw)
+    cleaned = re.sub(r"```\s*", "", cleaned).strip()
+
     try:
         result = json.loads(cleaned)
-    except json.JSONDecodeError as e:
-        print(f"JSON parse error: {e}", file=sys.stderr)
-        print(f"Raw output: {raw[:500]}", file=sys.stderr)
+    except json.JSONDecodeError as exc:
+        print(f"JSON parse error: {exc}", file=sys.stderr)
+        print(f"Raw output (first 500 chars): {raw[:500]}", file=sys.stderr)
         return None
+
+    base_slug = slugify(str(result.get("slug", result.get("title", "blog-post"))))
+    slug = f"{base_slug}-{random_suffix()}"
 
     return {
         "title": str(result.get("title", ""))[:200],
-        "slug": slugify(str(result.get("slug", ""))),
+        "slug": slug,
         "excerpt": str(result.get("excerpt", ""))[:500],
         "content": str(result.get("content", "")),
         "seo_title": str(result.get("seo_title", ""))[:65],
         "seo_description": str(result.get("seo_description", ""))[:160],
+        "cover_image_url": "",
+        "published_at": datetime.now(timezone.utc).isoformat(),
     }
 
 
-def save_to_supabase(post: dict) -> bool:
-    if not SUPABASE_URL or not SUPABASE_ANON_KEY:
-        print("Skipping Supabase save: NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY not set.", file=sys.stderr)
-        return False
+def save_to_supabase(post: dict, product_id: str | None = None) -> bool:
+    payload = {**post}
+    if product_id:
+        payload["related_product_ids"] = [product_id]
 
-    data = json.dumps({
-        **post,
-        "published_at": datetime.utcnow().isoformat(),
-    }).encode("utf-8")
-
-    req = urllib.request.Request(
-        f"{SUPABASE_URL}/rest/v1/blog_posts",
-        data=data,
-        headers={
-            "apikey": SUPABASE_ANON_KEY,
-            "Authorization": f"Bearer {SUPABASE_ANON_KEY}",
-            "Content-Type": "application/json",
-            "Prefer": "return=minimal",
-        },
-        method="POST",
-    )
-
-    try:
-        with urllib.request.urlopen(req, timeout=30):
-            print("Blog post saved to Supabase.")
-            return True
-    except Exception as e:
-        print(f"Supabase save error: {e}", file=sys.stderr)
-        return False
+    status, _ = supabase_request("POST", "/blog_posts", payload)
+    if status in (200, 201):
+        print(f"✅ Blog post saved to Supabase (slug: {post['slug']})")
+        return True
+    print(f"❌ Failed to save blog post (HTTP {status})", file=sys.stderr)
+    return False
 
 
+def save_local(post: dict) -> str:
+    output_file = f"blog-{post['slug']}.json"
+    with open(output_file, "w", encoding="utf-8") as f:
+        json.dump(post, f, indent=2, ensure_ascii=False)
+    print(f"📄 Blog post JSON written to: {output_file}")
+    return output_file
+
+
+# ── Main ───────────────────────────────────────────────────────────────────────
 def main():
-    if len(sys.argv) < 2:
-        print("Usage: python generate-blog.py \"Product Name\"")
-        print("   or: python generate-blog.py --product \"Product Name\" --desc \"Description\" --specs '{\"key\": \"value\"}'")
-        sys.exit(1)
+    args = sys.argv[1:]
+    dry_run = "--dry-run" in args
+    auto_mode = "--auto" in args
 
-    if len(sys.argv) >= 3 and sys.argv[1] in ("-p", "--product"):
-        name = sys.argv[2]
-        desc = ""
-        specs = {}
-        for i, arg in enumerate(sys.argv):
-            if arg in ("-d", "--desc") and i + 1 < len(sys.argv):
-                desc = sys.argv[i + 1]
-            if arg in ("-s", "--specs") and i + 1 < len(sys.argv):
+    if not args or args == ["--dry-run"]:
+        print(__doc__)
+        sys.exit(0)
+
+    product_id: str | None = None
+
+    if auto_mode:
+        print("🤖 Auto mode: fetching uncovered products from Supabase...")
+        products = get_uncovered_products()
+        if not products:
+            print("No products found in database.", file=sys.stderr)
+            sys.exit(1)
+        product = random.choice(products)
+        product_id = product.get("id")
+        product_info = (
+            f"Product: {product.get('name', '')}\n"
+            f"Description: {product.get('description', '')}\n"
+            f"Category: {product.get('category', '')}\n"
+            f"Price: KES {product.get('price', '')}\n"
+            f"Specs: {json.dumps(product.get('specs') or {})}"
+        )
+        print(f"📦 Selected product: {product.get('name')}")
+    elif "--product" in args or "-p" in args:
+        flag = "--product" if "--product" in args else "-p"
+        idx = args.index(flag)
+        if idx + 1 >= len(args):
+            print("Error: --product requires a value", file=sys.stderr)
+            sys.exit(1)
+        name = args[idx + 1]
+        desc, specs = "", {}
+        for i, arg in enumerate(args):
+            if arg in ("--desc", "-d") and i + 1 < len(args):
+                desc = args[i + 1]
+            if arg in ("--specs", "-s") and i + 1 < len(args):
                 try:
-                    specs = json.loads(sys.argv[i + 1])
+                    specs = json.loads(args[i + 1])
                 except json.JSONDecodeError:
-                    print("Warning: Specs must be valid JSON. Ignoring.", file=sys.stderr)
+                    print("Warning: --specs must be valid JSON. Ignoring.", file=sys.stderr)
         product_info = f"Product: {name}\nDescription: {desc}\nSpecs: {json.dumps(specs)}"
     else:
-        product_info = f"Product: {' '.join(sys.argv[1:])}"
+        product_info = f"Product: {' '.join(a for a in args if a != '--dry-run')}"
 
-    print(f"Generating blog post for: {product_info.split(chr(10))[0]}")
+    print(f"\n✍️  Generating blog post...")
     print("-" * 60)
 
     post = generate_blog_post(product_info)
     if not post:
-        print("Failed to generate blog post.", file=sys.stderr)
+        print("❌ Failed to generate blog post.", file=sys.stderr)
         sys.exit(1)
 
-    print(f"\nTitle: {post['title']}")
-    print(f"Slug: {post['slug']}")
-    print(f"Excerpt: {post['excerpt'][:100]}...")
-    print(f"SEO Title: {post['seo_title']}")
-    print(f"Content length: {len(post['content'])} chars")
+    print(f"Title:       {post['title']}")
+    print(f"Slug:        {post['slug']}")
+    print(f"SEO Title:   {post['seo_title']}")
+    print(f"Excerpt:     {post['excerpt'][:100]}...")
+    print(f"Content len: {len(post['content'])} chars")
     print("-" * 60)
 
-    save = input("Save to Supabase? (y/N): ").strip().lower()
-    if save == "y":
-        if save_to_supabase(post):
-            print("Saved successfully!")
+    if dry_run:
+        print("🔵 Dry-run mode: skipping Supabase save.")
+        save_local(post)
+    else:
+        if save_to_supabase(post, product_id):
+            save_local(post)
         else:
-            print("Save failed.", file=sys.stderr)
+            print("Saving local copy as fallback...")
+            save_local(post)
             sys.exit(1)
-
-    output_file = f"blog-{post['slug']}.json"
-    with open(output_file, "w", encoding="utf-8") as f:
-        json.dump(post, f, indent=2, ensure_ascii=False)
-    print(f"Blog post saved to {output_file}")
 
 
 if __name__ == "__main__":

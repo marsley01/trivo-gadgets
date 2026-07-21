@@ -42,7 +42,7 @@ export default function SignupPage() {
       }
 
       if (authData.session && authData.user) {
-        const { error: profileError } = await supabase.from("customers").upsert({
+        const { error: profileError } = await (supabase.from("customers") as any).upsert({
           user_id: authData.user.id,
           email,
           full_name: fullName || null,

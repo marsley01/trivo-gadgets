@@ -29,8 +29,16 @@ function parseStatements(sql: string): string[] {
 }
 
 export async function GET(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
-  const { allowed, retryAfter } = rateLimit(`migrate:${ip}`, 5, 3600000);
+  // SECURITY: require MIGRATE_SECRET — prevent unauthenticated migration triggers
+  const authHeader = req.headers.get("authorization");
+  const migrateSecret = process.env.MIGRATE_SECRET;
+  if (!migrateSecret || authHeader !== `Bearer ${migrateSecret}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const rawIp = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
+  const ip = rawIp.split(",")[0].trim();
+  const { allowed, retryAfter } = rateLimit(`migrate:${ip}`, 3, 3600000);
   if (!allowed) {
     return NextResponse.json(
       { error: "Too many migration attempts" },

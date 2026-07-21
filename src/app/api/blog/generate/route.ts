@@ -79,7 +79,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Authentication required." }, { status: 401 });
     }
 
-    const ip = req.headers.get("x-forwarded-for") || user.id;
+    // Admin-only: verify the user is in admin_users table
+    const { data: adminUser } = await supabase
+      .from("admin_users")
+      .select("id")
+      .eq("email", user.email)
+      .single();
+    if (!adminUser) {
+      return NextResponse.json({ error: "Forbidden: admin access required." }, { status: 403 });
+    }
+
+    const rawIp = req.headers.get("x-forwarded-for") || user.id;
+    const ip = rawIp.split(",")[0].trim();
     const { allowed, retryAfter } = rateLimit(`blog-generate:${ip}`, 10, 60000);
     if (!allowed) {
       return NextResponse.json(

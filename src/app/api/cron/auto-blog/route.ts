@@ -64,12 +64,10 @@ export const runtime = 'edge';
 
 export async function GET(req: Request) {
   try {
-    // 1. Verify Vercel Cron Secret
+    // 1. ENFORCE Vercel Cron Secret — always required, no bypass if missing
     const authHeader = req.headers.get('authorization');
-    if (
-      process.env.CRON_SECRET && 
-      authHeader !== `Bearer ${process.env.CRON_SECRET}`
-    ) {
+    const cronSecret = process.env.CRON_SECRET;
+    if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -85,19 +83,36 @@ export async function GET(req: Request) {
       }
     );
 
-    // 3. Fetch a random product from the database
-    // We get 20 random products and just pick the first one, to give variety
+    // 3. Fetch products that do NOT already have a blog post (deduplication)
+    const { data: existingPosts } = await supabase
+      .from("blog_posts")
+      .select("related_product_ids");
+
+    // Build a set of product IDs already covered
+    const coveredProductIds = new Set<string>();
+    if (existingPosts) {
+      for (const post of existingPosts) {
+        if (Array.isArray(post.related_product_ids)) {
+          post.related_product_ids.forEach((id: string) => coveredProductIds.add(id));
+        }
+      }
+    }
+
     const { data: products, error: productError } = await supabase
       .from("products")
       .select("id, name, description, category, price, specs")
-      .limit(20);
+      .limit(50);
 
     if (productError || !products || products.length === 0) {
       return NextResponse.json({ error: "No products found" }, { status: 404 });
     }
 
-    // Pick a random product from the fetched list
-    const randomProduct = products[Math.floor(Math.random() * products.length)];
+    // Filter to uncovered products first; fall back to all if all are covered
+    const uncoveredProducts = products.filter((p) => !coveredProductIds.has(p.id));
+    const candidates = uncoveredProducts.length > 0 ? uncoveredProducts : products;
+
+    // Pick a random candidate
+    const randomProduct = candidates[Math.floor(Math.random() * candidates.length)];
 
     const productInfo = `Product: ${randomProduct.name}\nDescription: ${randomProduct.description || ""}\nCategory: ${randomProduct.category || ""}\nPrice: KES ${randomProduct.price?.toLocaleString() || ""}\nSpecs: ${JSON.stringify(randomProduct.specs || {})}`;
 
@@ -111,13 +126,18 @@ export async function GET(req: Request) {
       prompt,
     });
 
-    const cleaned = text.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
-    const result = JSON.parse(cleaned);
+    // 5. Safely parse AI response
+    let result: Record<string, unknown>;
+    try {
+      const cleaned = text.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
+      result = JSON.parse(cleaned);
+    } catch (parseErr) {
+      console.error("Auto-blog: Failed to parse AI response:", parseErr);
+      return NextResponse.json({ error: "AI returned invalid JSON — retrying tomorrow" }, { status: 500 });
+    }
 
-    // 5. Save the Blog Post to the database
+    // 6. Save the Blog Post to the database
     const title = String(result.title || "").slice(0, 200);
-    // Ensure slug is unique by appending a timestamp or random string if needed, 
-    // but the DB will error on unique constraint if it already exists. We can just append a short random string.
     const baseSlug = String(result.slug || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 80);
     const slug = `${baseSlug}-${Math.random().toString(36).substring(2, 6)}`;
 
@@ -139,10 +159,15 @@ export async function GET(req: Request) {
 
     if (insertError) {
       console.error("Failed to insert blog post:", insertError);
-      return NextResponse.json({ error: "Failed to insert into DB", details: insertError }, { status: 500 });
+      return NextResponse.json({ error: "Failed to insert into DB", details: insertError.message }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, product: randomProduct.name, slug });
+    return NextResponse.json({
+      success: true,
+      product: randomProduct.name,
+      slug,
+      wasAlreadyCovered: uncoveredProducts.length === 0
+    });
 
   } catch (err: unknown) {
     console.error("Cron Auto-Blog Error:", err);

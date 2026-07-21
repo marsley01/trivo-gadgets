@@ -41,13 +41,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       siteName: "Trivo Kenya",
       type: "article",
       publishedTime: post.published_at,
-      images: post.cover_image_url ? [{ url: post.cover_image_url, width: 1200, height: 630 }] : [],
     },
     twitter: {
       card: "summary_large_image",
       title: post.seo_title || `${post.title} | Trivo Kenya`,
       description: post.seo_description || post.excerpt || "",
-      images: post.cover_image_url ? [post.cover_image_url] : [],
     },
     alternates: {
       canonical: `/blog/${post.slug}`,

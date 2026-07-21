@@ -31,6 +31,31 @@ import string
 from datetime import datetime, timezone
 
 
+def load_dotenv():
+    # Try current directory first, then parent directory
+    for base_dir in (".", ".."):
+        for fname in (".env.local", ".env"):
+            path = os.path.join(base_dir, fname)
+            if os.path.isfile(path):
+                try:
+                    with open(path, "r", encoding="utf-8") as f:
+                        for line in f:
+                            line = line.strip()
+                            if not line or line.startswith("#"):
+                                continue
+                            if "=" in line:
+                                k, v = line.split("=", 1)
+                                k = k.strip()
+                                v = v.strip().strip("'\"")
+                                if k and k not in os.environ:
+                                    os.environ[k] = v
+                except Exception:
+                    pass
+
+
+# Load local environment variables
+load_dotenv()
+
 # ── Configuration ──────────────────────────────────────────────────────────────
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 SUPABASE_URL = os.environ.get("NEXT_PUBLIC_SUPABASE_URL", "")
@@ -127,7 +152,7 @@ def get_uncovered_products() -> list[dict]:
             covered_ids.update(ids)
 
     # Fetch products
-    status, products = supabase_request("GET", "/products?select=id,name,description,category,price,specs&limit=100")
+    status, products = supabase_request("GET", "/products?select=id,name,description,category,price,specifications&limit=100")
     if status != 200 or not isinstance(products, list):
         return []
 
@@ -212,9 +237,9 @@ def save_to_supabase(post: dict, product_id: str | None = None) -> bool:
 
     status, _ = supabase_request("POST", "/blog_posts", payload)
     if status in (200, 201):
-        print(f"✅ Blog post saved to Supabase (slug: {post['slug']})")
+        print(f"[SUCCESS] Blog post saved to Supabase (slug: {post['slug']})")
         return True
-    print(f"❌ Failed to save blog post (HTTP {status})", file=sys.stderr)
+    print(f"[ERROR] Failed to save blog post (HTTP {status})", file=sys.stderr)
     return False
 
 
@@ -222,7 +247,7 @@ def save_local(post: dict) -> str:
     output_file = f"blog-{post['slug']}.json"
     with open(output_file, "w", encoding="utf-8") as f:
         json.dump(post, f, indent=2, ensure_ascii=False)
-    print(f"📄 Blog post JSON written to: {output_file}")
+    print(f"[INFO] Blog post JSON written to: {output_file}")
     return output_file
 
 
@@ -239,7 +264,7 @@ def main():
     product_id: str | None = None
 
     if auto_mode:
-        print("🤖 Auto mode: fetching uncovered products from Supabase...")
+        print("[AUTO] Auto mode: fetching uncovered products from Supabase...")
         products = get_uncovered_products()
         if not products:
             print("No products found in database.", file=sys.stderr)
@@ -251,9 +276,9 @@ def main():
             f"Description: {product.get('description', '')}\n"
             f"Category: {product.get('category', '')}\n"
             f"Price: KES {product.get('price', '')}\n"
-            f"Specs: {json.dumps(product.get('specs') or {})}"
+            f"Specs: {json.dumps(product.get('specifications') or {})}"
         )
-        print(f"📦 Selected product: {product.get('name')}")
+        print(f"[INFO] Selected product: {product.get('name')}")
     elif "--product" in args or "-p" in args:
         flag = "--product" if "--product" in args else "-p"
         idx = args.index(flag)
@@ -274,12 +299,12 @@ def main():
     else:
         product_info = f"Product: {' '.join(a for a in args if a != '--dry-run')}"
 
-    print(f"\n✍️  Generating blog post...")
+    print(f"\n[INFO] Generating blog post...")
     print("-" * 60)
 
     post = generate_blog_post(product_info)
     if not post:
-        print("❌ Failed to generate blog post.", file=sys.stderr)
+        print("[ERROR] Failed to generate blog post.", file=sys.stderr)
         sys.exit(1)
 
     print(f"Title:       {post['title']}")
@@ -290,7 +315,7 @@ def main():
     print("-" * 60)
 
     if dry_run:
-        print("🔵 Dry-run mode: skipping Supabase save.")
+        print("[INFO] Dry-run mode: skipping Supabase save.")
         save_local(post)
     else:
         if save_to_supabase(post, product_id):

@@ -70,7 +70,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: seoDesc,
       url: `https://trivokenya.store/products/${product.slug}`,
       siteName: "Trivo Kenya",
-      images: product.image_url ? [{ url: product.image_url, width: 1200, height: 630 }] : [],
       locale: "en_KE",
       type: "website",
     },
@@ -78,7 +77,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       card: "summary_large_image",
       title: product.seo_title || `${product.name} | Trivo Kenya`,
       description: seoDesc,
-      images: product.image_url ? [product.image_url] : [],
     },
     alternates: {
       canonical: `https://trivokenya.store/products/${product.slug}`,

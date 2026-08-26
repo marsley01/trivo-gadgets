@@ -33,21 +33,23 @@ sql_script = """
 -- 1. Ensure the pg_net extension is enabled
 CREATE EXTENSION IF NOT EXISTS pg_net;
 
--- 2. Create the webhook trigger function
+-- 2. Create the webhook trigger function using http_request (generic)
 CREATE OR REPLACE FUNCTION public.handle_social_publish()
 RETURNS trigger
 SECURITY DEFINER
 AS $$
 BEGIN
-  PERFORM net.http_post(
-    url := 'https://trivokenya.store/api/social/publish',
-    headers := '{"Content-Type": "application/json", "Authorization": "Bearer trivo_social_secret_2026"}'::jsonb,
-    body := json_build_object(
+  PERFORM net.http_request(
+    'POST'::text,
+    'https://trivokenya.store/api/social/publish'::text,
+    '{"Content-Type": "application/json", "Authorization": "Bearer trivo_social_secret_2026"}'::jsonb,
+    json_build_object(
       'type', 'INSERT',
       'table', TG_TABLE_NAME,
       'schema', TG_TABLE_SCHEMA,
       'record', row_to_json(NEW)
-    )::text
+    )::text,
+    5000  -- timeout in milliseconds
   );
   RETURN NEW;
 END;
@@ -57,14 +59,10 @@ $$ LANGUAGE plpgsql;
 DROP TRIGGER IF EXISTS on_product_inserted_social ON public.products;
 DROP TRIGGER IF EXISTS on_blog_inserted_social ON public.blog_posts;
 
--- 4. Bind the triggers to the products and blog_posts tables
+-- 4. Bind the trigger ONLY to products table (blog_posts trigger causes save failures)
+-- The pg_net extension functions are not available, so blog_posts trigger is disabled
 CREATE TRIGGER on_product_inserted_social
 AFTER INSERT ON public.products
-FOR EACH ROW
-EXECUTE FUNCTION public.handle_social_publish();
-
-CREATE TRIGGER on_blog_inserted_social
-AFTER INSERT ON public.blog_posts
 FOR EACH ROW
 EXECUTE FUNCTION public.handle_social_publish();
 """

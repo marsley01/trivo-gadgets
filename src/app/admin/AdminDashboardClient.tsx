@@ -1310,7 +1310,7 @@ export default function AdminDashboardClient({
               </div>
               <div className="flex flex-wrap items-center justify-center gap-3">
                 <a
-                  href={`https://wa.me/254${txSuccess.customerPhone.replace(/^0+/, "")}?text=${encodeURIComponent(`Hi ${txSuccess.customerName}! ✅ Your payment of KES ${txSuccess.total.toLocaleString()} has been confirmed. View your Trivo Kenya receipt here: https://trivokenya.store/receipt/${txSuccess.receiptNumber} Thank you for your order! 🛍️`)}`}
+                  href={`https://wa.me/254${txSuccess.customerPhone.replace(/^0+/, "").replace(/\D/g, "") || "0"}?text=${encodeURIComponent(`Hi ${txSuccess.customerName}! ✅ Your payment of KES ${txSuccess.total.toLocaleString()} has been confirmed. View your Trivo Kenya receipt here: https://trivokenya.store/receipt/${txSuccess.receiptNumber} Thank you for your order! 🛍️`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-green-500 transition-colors"

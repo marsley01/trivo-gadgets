@@ -1,0 +1,67 @@
+name: 📝 Auto-Blog Generator (Nightly)
+
+on:
+  # Run every day at 9 AM EAT (06:00 UTC)
+  schedule:
+    - cron: "0 6 * * *"
+  # Also allow manual trigger from GitHub UI
+  workflow_dispatch:
+    inputs:
+      product_name:
+        description: "Specific product name (leave empty for auto-pick from DB)"
+        required: false
+        type: string
+      dry_run:
+        description: "Dry run (generate but do NOT save to Supabase)"
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  generate-blog:
+    name: Generate Blog Post
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 📂 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 🤖 Generate blog post (auto-pick from DB)
+        if: ${{ !inputs.product_name }}
+        run: |
+          ARGS="--auto"
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            ARGS="$ARGS --dry-run"
+          fi
+          python scripts/generate-blog.py $ARGS
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: 📝 Generate blog post (specific product)
+        if: ${{ inputs.product_name }}
+        run: |
+          ARGS="--product \"${{ inputs.product_name }}\""
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            ARGS="$ARGS --dry-run"
+          fi
+          python scripts/generate-blog.py $ARGS
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: 📤 Upload generated JSON as artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: blog-post-${{ github.run_number }}
+          path: "*.json"
+          retention-days: 7

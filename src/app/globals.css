@@ -2,15 +2,42 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --foreground-rgb: 255, 255, 255;
-  --background-start-rgb: 10, 10, 10;
-  --background-end-rgb: 10, 10, 10;
+:root,
+.dark {
+  --color-background: #0a0a0a;
+  --color-foreground: #ffffff;
+  --color-card: #141414;
+  --color-card-hover: #1c1c1c;
+  --color-border: rgba(255, 255, 255, 0.12);
+  --color-border-subtle: rgba(255, 255, 255, 0.06);
+  --color-surface: #181818;
+  --color-muted: #a3a3a3;
+  --color-muted-foreground: #737373;
+  --color-subtle: #d4d4d4;
+  --color-overlay: rgba(255, 255, 255, 0.04);
+  --color-overlay-heavy: rgba(0, 0, 0, 0.6);
+  --color-chat-bubble: #1f1f1f;
+}
+
+.light {
+  --color-background: #ffffff;
+  --color-foreground: #0a0a0a;
+  --color-card: #fafafa;
+  --color-card-hover: #f2f2f2;
+  --color-border: rgba(0, 0, 0, 0.12);
+  --color-border-subtle: rgba(0, 0, 0, 0.06);
+  --color-surface: #f0f0f0;
+  --color-muted: #525252;
+  --color-muted-foreground: #737373;
+  --color-subtle: #404040;
+  --color-overlay: rgba(0, 0, 0, 0.05);
+  --color-overlay-heavy: rgba(0, 0, 0, 0.5);
+  --color-chat-bubble: #e5e5e5;
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: rgb(var(--background-start-rgb));
+  background: var(--color-background);
+  color: var(--color-foreground);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -18,5 +45,21 @@ body {
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+
+  .transform-gpu {
+    transform-style: preserve-3d;
+  }
+
+  .hover\:rotate-y-12:hover {
+    transform: rotateY(12deg);
+  }
+
+  .hover\:rotate-x-12:hover {
+    transform: rotateX(12deg);
   }
 }

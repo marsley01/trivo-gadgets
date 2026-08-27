@@ -1,36 +1,50 @@
-import Link from "next/link";
-import { LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 
 export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  // Read the current URL from the request headers to detect login page.
+  // Next.js sets x-invoke-path, or we can read x-url / x-pathname from middleware.
+  // As a reliable fallback we also check the referer and next-url headers.
+  const headersList = await headers();
+  const pathname =
+    headersList.get("x-next-url") ||
+    headersList.get("x-invoke-path") ||
+    headersList.get("x-middleware-invoke") ||
+    "";
+
+  // If the request is for the login page, skip auth checks entirely.
+  // The login page has its own layout that renders children directly.
+  // We must NOT redirect here or we create an infinite loop.
+  const isLoginPage = pathname.startsWith("/admin/login");
+
+  if (!isLoginPage) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user?.email) {
+      redirect("/admin/login");
+    }
+
+    // Check admin_users table for role verification
+    const { data: adminUser } = await supabase
+      .from("admin_users")
+      .select("id, role")
+      .eq("email", user.email)
+      .single();
+
+    if (!adminUser) {
+      redirect("/admin/login");
+    }
+  }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
-      {user && (
-        <header className="sticky top-0 z-40 border-b border-white/10 bg-background/80 backdrop-blur-md px-4 md:px-8 h-16 flex items-center justify-between">
-          <Link href="/admin" className="text-xl font-bold tracking-tight text-white">
-            TRIVO <span className="text-accent">ADMIN</span>
-          </Link>
-          <form action="/auth/signout" method="post">
-            <button
-              type="submit"
-              className="text-sm font-medium text-neutral-400 hover:text-white flex items-center gap-2 transition-colors"
-            >
-              <LogOut className="h-4 w-4" />
-              Sign Out
-            </button>
-          </form>
-        </header>
-      )}
-      <main className="flex-1 container mx-auto px-4 md:px-8 py-8">
-        {children}
-      </main>
+    <div className="min-h-screen bg-background text-foreground">
+      {children}
     </div>
   );
 }

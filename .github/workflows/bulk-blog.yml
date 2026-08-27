@@ -1,0 +1,77 @@
+name: 📚 Bulk Blog Generator (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      count:
+        description: "Number of blog posts to generate (1-10)"
+        required: true
+        type: number
+        default: 5
+      dry_run:
+        description: "Dry run — generate but do NOT save to Supabase"
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  bulk-generate:
+    name: Bulk Generate ${{ inputs.count }} Blog Posts
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: 📂 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 🚀 Generate ${{ inputs.count }} blog posts
+        run: |
+          COUNT=${{ inputs.count }}
+          # Clamp to max 10 to avoid runaway API costs
+          if [ "$COUNT" -gt 10 ]; then
+            COUNT=10
+            echo "⚠️ Count clamped to 10 (maximum)"
+          fi
+
+          DRY_RUN_FLAG=""
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            DRY_RUN_FLAG="--dry-run"
+          fi
+
+          echo "📝 Generating $COUNT blog posts..."
+          FAILED=0
+          for i in $(seq 1 $COUNT); do
+            echo ""
+            echo "━━━ Post $i / $COUNT ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            python scripts/generate-blog.py --auto $DRY_RUN_FLAG || FAILED=$((FAILED + 1))
+            # Small delay to respect OpenRouter rate limits
+            if [ $i -lt $COUNT ]; then
+              sleep 5
+            fi
+          done
+
+          if [ "$FAILED" -gt 0 ]; then
+            echo ""
+            echo "⚠️ $FAILED post(s) failed to generate."
+            exit 1
+          fi
+
+          echo ""
+          echo "✅ All $COUNT posts generated successfully!"
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: 📤 Upload all generated JSONs as artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bulk-blog-posts-${{ github.run_number }}
+          path: "*.json"
+          retention-days: 14

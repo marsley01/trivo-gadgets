@@ -33,20 +33,20 @@ export default function CartDrawer() {
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 z-50 bg-overlay-heavy/80 backdrop-blur-sm transition-opacity"
         onClick={() => setIsDrawerOpen(false)}
       />
 
       {/* Drawer */}
-      <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col bg-background shadow-2xl transition-transform sm:border-l sm:border-white/10 animate-in slide-in-from-right duration-300">
-        <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
+      <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col bg-background shadow-2xl transition-transform sm:border-l sm:border-default animate-in slide-in-from-right duration-300">
+        <div className="flex items-center justify-between border-b border-default px-6 py-4">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <ShoppingBag className="h-5 w-5" />
             Your Cart
           </h2>
           <button
             onClick={() => setIsDrawerOpen(false)}
-            className="rounded-full p-2 hover:bg-white/10 transition-colors text-neutral-400 hover:text-white"
+            className="rounded-full p-2 hover:bg-surface transition-colors text-muted hover:text-foreground"
           >
             <X className="h-5 w-5" />
           </button>
@@ -54,9 +54,15 @@ export default function CartDrawer() {
 
         <div className="flex-1 overflow-y-auto px-6 py-4">
           {items.length === 0 ? (
-            <div className="flex h-full flex-col items-center justify-center text-neutral-500">
+            <div className="flex h-full flex-col items-center justify-center text-muted-foreground">
               <ShoppingBag className="h-16 w-16 mb-4 opacity-20" />
-              <p>Your cart is empty.</p>
+              <p className="mb-2">Your cart is empty.</p>
+              <button
+                onClick={() => setIsDrawerOpen(false)}
+                className="text-sm text-accent hover:underline font-medium"
+              >
+                Continue Shopping
+              </button>
             </div>
           ) : (
             <div className="flex flex-col gap-6">
@@ -67,27 +73,30 @@ export default function CartDrawer() {
                       src={item.image_url || "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?q=80&w=600&auto=format&fit=crop"}
                       alt={item.name}
                       fill
+                      sizes="80px"
                       className="object-cover"
                     />
                   </div>
                   <div className="flex flex-1 flex-col py-1">
                     <div className="flex justify-between items-start gap-2">
-                      <h3 className="font-medium text-sm line-clamp-2 text-neutral-200">{item.name}</h3>
+                      <h3 className="font-medium text-sm line-clamp-2 text-foreground/90">{item.name}</h3>
                       <button
-                        onClick={() => removeFromCart(item.id)}
-                        className="text-neutral-500 hover:text-red-400 transition-colors mt-0.5"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
+                          onClick={() => removeFromCart(item.id)}
+                          className="text-muted-foreground hover:text-red-400 transition-colors mt-0.5"
+                          aria-label={`Remove ${item.name} from cart`}
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
                     </div>
-                    <p className="mt-1 text-sm text-neutral-400 font-medium">
+                    <p className="mt-1 text-sm text-muted font-medium">
                       KES {item.price.toLocaleString()}
                     </p>
                     <div className="mt-auto flex items-center gap-3">
-                      <div className="flex items-center rounded-full border border-white/10 bg-neutral-900/50">
+                      <div className="flex items-center rounded-full border border-default bg-card/50">
                         <button
                           onClick={() => updateQuantity(item.id, item.quantity - 1)}
                           className="p-1.5 hover:text-accent disabled:opacity-50 transition-colors"
+                          aria-label="Decrease quantity"
                         >
                           <Minus className="h-3.5 w-3.5" />
                         </button>
@@ -98,6 +107,7 @@ export default function CartDrawer() {
                           onClick={() => updateQuantity(item.id, item.quantity + 1)}
                           className="p-1.5 hover:text-accent disabled:opacity-50 transition-colors"
                           disabled={item.quantity >= item.stock}
+                          aria-label="Increase quantity"
                         >
                           <Plus className="h-3.5 w-3.5" />
                         </button>
@@ -111,12 +121,12 @@ export default function CartDrawer() {
         </div>
 
         {items.length > 0 && (
-          <div className="border-t border-white/10 p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] bg-neutral-900/20">
+          <div className="border-t border-default p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] bg-card/20">
             <div className="flex items-center justify-between mb-4">
-              <span className="text-base font-medium text-neutral-300">Subtotal</span>
-              <span className="text-lg font-bold text-white">KES {cartTotal.toLocaleString()}</span>
+              <span className="text-base font-medium text-subtle">Subtotal</span>
+              <span className="text-lg font-bold text-foreground">KES {cartTotal.toLocaleString()}</span>
             </div>
-            <p className="text-xs text-neutral-500 mb-6 flex justify-between">
+            <p className="text-xs text-muted-foreground mb-6 flex justify-between">
               <span>Shipping & taxes</span>
               <span>Calculated at checkout</span>
             </p>

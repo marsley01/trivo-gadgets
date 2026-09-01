@@ -21,7 +21,7 @@ function applySecurityHeaders(res: NextResponse, pathname: string): NextResponse
     "Content-Security-Policy",
     [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com",
+      "script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com" + (process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""),
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: blob: https:",
       "font-src 'self' data: https://fonts.gstatic.com",

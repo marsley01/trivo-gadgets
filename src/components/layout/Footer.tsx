@@ -70,7 +70,7 @@ export default function Footer() {
               />
             </Link>
             <p className="text-muted-foreground text-xs leading-relaxed max-w-xs">
-              Your reliable store for genuine tech gadgets in Kenya. Easy WhatsApp ordering, free Nairobi delivery, and pay on delivery.
+              Your trusted retailer for genuine phones, laptops, and tech accessories in Kenya. Honest prices, free Nairobi delivery, and pay on delivery.
             </p>
             <div className="flex gap-2 pt-2 flex-wrap">
               {socials.map((s) => (
@@ -90,13 +90,13 @@ export default function Footer() {
 
           {/* Shop Categories */}
           <div className="space-y-4">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">Shop Collections</h4>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">Phones & Laptops</h4>
             <ul className="space-y-2.5 text-xs text-muted-foreground">
-              <li><Link href="/products" className="hover:text-accent transition-colors font-semibold">All Products in Kenya</Link></li>
-              <li><Link href="/categories/car-accessories" className="hover:text-accent transition-colors">Car Accessories in Kenya</Link></li>
-              <li><Link href="/categories/audio" className="hover:text-accent transition-colors">Audio & Earbuds in Kenya</Link></li>
-              <li><Link href="/categories/smart-home" className="hover:text-accent transition-colors">Smart Home Tech in Kenya</Link></li>
-              <li><Link href="/categories/cables" className="hover:text-accent transition-colors">Fast Chargers & Cables in Kenya</Link></li>
+              <li><Link href="/categories/phones" className="hover:text-accent transition-colors font-semibold">Smartphones in Kenya</Link></li>
+              <li><Link href="/categories/iphones" className="hover:text-accent transition-colors">Apple iPhones</Link></li>
+              <li><Link href="/categories/samsung" className="hover:text-accent transition-colors">Samsung Phones</Link></li>
+              <li><Link href="/categories/laptops" className="hover:text-accent transition-colors font-semibold">Laptops in Kenya</Link></li>
+              <li><Link href="/categories/macbooks" className="hover:text-accent transition-colors">Apple MacBooks</Link></li>
             </ul>
           </div>
 

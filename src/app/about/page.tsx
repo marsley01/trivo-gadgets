@@ -1,29 +1,29 @@
 import type { Metadata } from "next";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import { Sparkles, Compass, ShieldAlert, Award, ChevronRight } from "lucide-react";
+import { Sparkles, Compass, ShieldAlert, Award, ChevronRight, Smartphone, Laptop } from "lucide-react";
 import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "About Us | Trivo Kenya",
-  description: "Trivo Kenya is your go-to store for genuine tech gadgets in Nairobi. We hand-pick the best audio gear, smart home tech, and chargers, delivered to your door.",
+  description: "Trivo Kenya is a Kenyan phone and laptop retailer based in Nairobi. We stock genuine iPhones, Samsung, Tecno, Xiaomi, HP, Lenovo, Dell, and MacBooks at honest prices with free delivery.",
 };
 
 const pillars = [
   {
-    icon: Compass,
-    title: "Carefully Selected",
-    desc: "We don't list thousands of random products. We test and select only the best earbuds, fast chargers, smart home devices, and car accessories so you don't have to guess what works.",
+    icon: Smartphone,
+    title: "Phones & Laptops Only",
+    desc: "We focus on what we know best: genuine smartphones and laptops. iPhones, Samsung, Tecno, Xiaomi, Redmi, HP, Lenovo, Dell, and MacBooks. No random gadgets, no car accessories, no smart-home gimmicks.",
   },
   {
     icon: ShieldAlert,
-    title: "100% Genuine Tech",
-    desc: "We know how frustrating it is to buy a gadget only to realize it's a generic copy. At Trivo, we only sell original, brand-new items imported directly from trusted manufacturers.",
+    title: "100% Genuine Products",
+    desc: "Every phone and laptop we sell is original and sourced from trusted suppliers. We check each unit before it leaves our dispatch hub so you receive exactly what you ordered.",
   },
   {
     icon: Sparkles,
-    title: "Fast Delivery & M-PESA on Delivery",
-    desc: "No long waits and no delivery fee. If you're in Nairobi, our rider brings your order to your doorstep for free within 1 to 2 days. You can open the package and check your item before paying via M-PESA.",
+    title: "Honest Prices & Fast Delivery",
+    desc: "Our prices are competitive and transparent — no fake discounts. Free delivery within Nairobi in 1 to 2 days. Upcountry delivery via trusted couriers in 2 to 3 days. Pay on delivery.",
   },
 ];
 
@@ -47,19 +47,19 @@ export default function AboutPage() {
           </h1>
 
           <p className="text-lg md:text-xl text-subtle mb-16 max-w-2xl leading-relaxed">
-            We're a team of tech lovers based in Nairobi. We started Trivo Kenya to make it easy for Kenyans to buy genuine, high-quality gadgets without the usual stress or waiting for weeks.
+            We&apos;re a Nairobi-based phone and laptop retailer. We started Trivo Kenya because buying genuine tech in Kenya shouldn&apos;t require guessing, waiting weeks, or overpaying.
           </p>
 
           <div className="space-y-6 mb-20 leading-relaxed text-subtle text-base md:text-lg">
             <h2 className="text-2xl font-bold text-foreground mb-4">Why We Started Trivo</h2>
             <p>
-              We used to get frustrated trying to find reliable tech accessories in Nairobi. You either had to order from abroad and wait a month for shipping, or take a gamble on local shops where fakes and generic copies are common.
+              Too many Kenyans have had to choose between paying too much at a physical store, or gambling with unverified sellers online. We wanted a different option: a store where you can browse, ask questions, and order genuine phones and laptops with confidence.
             </p>
             <p>
-              Trivo Kenya was started to solve that exact problem. We wanted an online store where you can be 100% sure you're buying original items, with delivery that takes a day or two instead of weeks.
+              Trivo Kenya focuses on two categories — phones and laptops — because that&apos;s where most Kenyan shoppers need real help. We stock popular brands like iPhone, Samsung, Tecno, Xiaomi, HP, Lenovo, Dell, and MacBook, and we list prices clearly so you can compare.
             </p>
             <p>
-              Our approach is simple: **&quot;chat, order, delivered.&quot;** You can chat with us directly on WhatsApp, ask questions about specs, get honest recommendations, and pay safely when your item arrives.
+              Our approach is simple: browse, chat, order. You can message us on WhatsApp to confirm availability, ask about specs, or get advice on which phone or laptop fits your budget. Then we deliver to your door and you pay on delivery.
             </p>
           </div>
 
@@ -90,11 +90,11 @@ export default function AboutPage() {
             <div className="space-y-3 max-w-lg">
               <span className="inline-flex items-center gap-1 text-xs text-accent font-bold uppercase tracking-wider bg-accent/10 border border-accent/20 px-3 py-1 rounded-full">
                 <Award className="h-4 w-4" />
-                Guaranteed Genuine
+                Genuine Phones & Laptops
               </span>
               <h3 className="text-2xl font-extrabold text-foreground">Explore Our Store</h3>
               <p className="text-sm text-subtle leading-relaxed">
-                Take a look at our collection. Whether you need reliable wireless earbuds, a fast charger that won't ruin your battery, or a smart gadget for your home, we've got you covered.
+                Browse our collection of genuine smartphones and laptops. Whether you need a reliable work phone, a student laptop, or a MacBook, we&apos;ve got clear prices and honest advice.
               </p>
             </div>
             

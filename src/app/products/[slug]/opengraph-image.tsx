@@ -19,7 +19,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
     .eq("slug", slug)
     .single();
 
-  const name = product?.name || "Premium Gadget";
+  const name = product?.name || "Phone & Laptop | Trivo Kenya";
   const brand = product?.brand || "Trivo";
   const price = product?.price ? `KES ${product.price.toLocaleString()}` : "Price on Request";
   const imageUrl = product?.image_url || "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600&auto=format&fit=crop";

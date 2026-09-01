@@ -5,11 +5,11 @@ import { Calendar, ChevronRight, Clock, ArrowRight } from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Blog | Tech Guides & Reviews – Trivo Kenya",
-  description: "Read the latest tech guides, product reviews, and gadget tips from Trivo Kenya. Stay ahead with premium tech insights.",
+  title: "Blog | Phone & Laptop Guides – Trivo Kenya",
+  description: "Read buying guides, phone and laptop tips, and honest advice for Kenyan shoppers. Find the best phones and laptops at Trivo Kenya.",
   openGraph: {
     title: "Blog | Trivo Kenya",
-    description: "Tech guides, product reviews, and gadget tips from Trivo Kenya.",
+    description: "Phone and laptop buying guides, tips, and honest advice for Kenyan shoppers.",
     url: "https://trivokenya.store/blog",
     siteName: "Trivo Kenya",
     locale: "en_KE",
@@ -42,20 +42,20 @@ export default async function BlogPage() {
         </nav>
 
         <div className="mb-12">
-          <h1 className="text-4xl md:text-6xl font-black tracking-tight text-foreground mb-4 leading-[1.05]">Blog</h1>
+          <h1 className="text-4xl md:text-6xl font-black tracking-tight text-foreground mb-4 leading-[1.05]">Buying Guides</h1>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl leading-relaxed">
-            Tech guides, product reviews, and tips to help you get the most out of your gadgets in Kenya.
+            Honest advice on choosing phones and laptops in Kenya. Compare brands, understand specs, and find the right device for your budget.
           </p>
         </div>
 
         {(!posts || posts.length === 0) && (
-          <div className="text-center py-24">
-            <div className="mx-auto mb-6 h-16 w-16 rounded-2xl bg-surface flex items-center justify-center">
-              <Calendar className="h-8 w-8 text-muted-foreground/40" />
+            <div className="text-center py-24">
+              <div className="mx-auto mb-6 h-16 w-16 rounded-2xl bg-surface flex items-center justify-center">
+                <Calendar className="h-8 w-8 text-muted-foreground/40" />
+              </div>
+              <h3 className="text-xl font-bold text-foreground mb-2">No guides yet</h3>
+              <p className="text-muted text-sm max-w-md mx-auto">We&apos;re working on honest phone and laptop buying guides for Kenyan shoppers. Check back soon for practical advice on choosing the right device.</p>
             </div>
-            <h3 className="text-xl font-bold text-foreground mb-2">No posts yet</h3>
-            <p className="text-muted text-sm max-w-md mx-auto">We are working on fresh tech content for you. Check back soon for reviews, guides, and the latest gadget news.</p>
-          </div>
         )}
 
         {featured && (

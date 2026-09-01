@@ -2,11 +2,15 @@ import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { rateLimit } from "@/lib/rate-limiter";
+import { isValidEmail } from "@/lib/server-utils";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim()
+    || req.headers.get("x-real-ip")
+    || "unknown";
+
   const { allowed, retryAfter } = rateLimit(`password-reset:${ip}`, 2, 60000);
   if (!allowed) {
     return NextResponse.json(
@@ -28,7 +32,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Email is required." }, { status: 400 });
     }
 
-    const redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/auth/callback?next=/auth/update-password`;
+    // Validate email format before any Supabase call
+    if (!isValidEmail(email)) {
+      return NextResponse.json({ error: "Invalid email address." }, { status: 400 });
+    }
+
+    const redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL || "https://trivokenya.store"}/auth/callback?next=/auth/update-password`;
 
     const { data, error } = await supabaseAdmin.auth.admin.generateLink({
       type: "recovery",
@@ -36,14 +45,15 @@ export async function POST(req: NextRequest) {
       options: { redirectTo },
     });
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+    // ── Always return a generic success response to prevent email enumeration ──
+    // Do NOT expose whether the email exists or not.
+    if (error || !data?.properties?.action_link) {
+      // Log for internal visibility but don't surface the real error
+      if (error) console.error("Password reset generateLink error:", error.message);
+      return NextResponse.json({ success: true });
     }
 
-    const resetLink = data?.properties?.action_link;
-    if (!resetLink) {
-      return NextResponse.json({ error: "Failed to generate reset link." }, { status: 500 });
-    }
+    const resetLink = data.properties.action_link;
 
     const resend = new Resend(process.env.RESEND_API_KEY);
     const { error: emailError } = await resend.emails.send({
@@ -83,7 +93,7 @@ export async function POST(req: NextRequest) {
 
     if (emailError) {
       console.error("Resend error:", emailError);
-      return NextResponse.json({ error: "Failed to send reset email." }, { status: 500 });
+      // Still return success — don't reveal email send failure to caller
     }
 
     return NextResponse.json({ success: true });

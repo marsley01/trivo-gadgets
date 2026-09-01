@@ -15,7 +15,7 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 const siteUrl = "https://trivokenya.store";
 const siteName = "Trivo Kenya";
-const siteDescription = "Premium tech gadgets, smart home devices, and accessories in Kenya. Shop the latest drops with free delivery in Nairobi.";
+const siteDescription = "Genuine phones and laptops in Kenya at honest prices. Shop iPhones, Samsung, Tecno, Xiaomi, HP, Lenovo, Dell, and MacBooks. Free Nairobi delivery, pay on delivery.";
 
 export const viewport: Viewport = {
   themeColor: "#0a0a0a",
@@ -26,7 +26,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: `${siteName} | Premium Tech Gadgets`,
+    default: `${siteName} — Phones & Laptops`,
     template: `%s | ${siteName}`,
   },
   description: siteDescription,
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     title: siteName,
   },
   openGraph: {
-    title: `${siteName} | Premium Tech Gadgets`,
+    title: `${siteName} — Phones & Laptops`,
     description: siteDescription,
     url: siteUrl,
     siteName,
@@ -47,7 +47,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: `${siteName} | Premium Tech Gadgets`,
+    title: `${siteName} — Phones & Laptops`,
     description: siteDescription,
   },
   robots: {
@@ -57,7 +57,7 @@ export const metadata: Metadata = {
   verification: {
     google: "bRywbYsy_4fiLkqmp71IbeHcPh-MGfZ1d5Tlot-5mJw",
   },
-  keywords: ["premium tech gadgets Kenya", "smart home devices Kenya", "tech accessories Kenya", "Trivo Kenya", "online gadget store Kenya"],
+  keywords: ["phones in Kenya", "laptops in Kenya", "iPhone Kenya", "Samsung phones Kenya", "Tecno Kenya", "Xiaomi Kenya", "HP laptops Kenya", "Lenovo Kenya", "Dell Kenya", "MacBook Kenya", "buy phones Kenya", "buy laptops Kenya"],
   alternates: {
     canonical: siteUrl,
     languages: {

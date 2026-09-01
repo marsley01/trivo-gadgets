@@ -1,50 +1,14 @@
 "use server";
 
-import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@/lib/supabase/server";
 import { Database } from "@/types/database.types";
 import { revalidatePath } from "next/cache";
 import { upscaleImage } from "@/lib/upscale";
 import crypto from "crypto";
 import { rateLimitServerAction } from "@/lib/rate-limiter";
+import { slugify, generateUniqueSlug, validateUrl, getAdminClient } from "@/lib/server-utils";
 
 type Product = Database["public"]["Tables"]["products"]["Row"];
-
-function slugify(text: string): string {
-  return text
-    .toLowerCase().trim()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/[\s_]+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 100);
-}
-
-function generateUniqueSlug(name: string): string {
-  const base = slugify(name) || "product";
-  const suffix = crypto.randomUUID().slice(0, 6);
-  return `${base}-${suffix}`;
-}
-
-function validateUrl(input: string): boolean {
-  try {
-    const url = new URL(input);
-    if (url.protocol !== "https:" && url.protocol !== "http:") return false;
-    if (url.hostname === "localhost" || url.hostname === "127.0.0.1" || url.hostname === "0.0.0.0") return false;
-    if (url.hostname.startsWith("169.254") || url.hostname.startsWith("10.") || url.hostname.startsWith("172.") || url.hostname.startsWith("192.168")) return false;
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function getAdminClient() {
-  return createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { cookies: { getAll: () => [], setAll: () => {} } }
-  );
-}
 
 async function verifyVendorAuth(vendorId?: string) {
   const supabase = await createClient();
@@ -77,6 +41,7 @@ async function verifyVendorAuth(vendorId?: string) {
 export async function getVendorProfile() {
   const { cookies } = await import("next/headers");
   const cookieStore = await cookies();
+  const { createServerClient } = await import("@supabase/ssr");
   const supabase = createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -130,7 +95,7 @@ export async function getVendorOrders(vendorId: string) {
 export async function updateProductStock(productId: string, stock: number) {
   const adminClient = getAdminClient();
 
-  // First verify the caller owns this product
+  // Verify the caller owns this product
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user?.email) throw new Error("Not authenticated");
@@ -161,7 +126,7 @@ export async function updateProductStock(productId: string, stock: number) {
 }
 
 export async function createVendorProduct(formData: FormData, vendorId: string) {
-  const { allowed } = rateLimitServerAction("create-vendor-product", 10, 60000);
+  const { allowed } = await rateLimitServerAction("create-vendor-product", 10, 60000);
   if (!allowed) throw new Error("Too many requests. Please slow down.");
   const vendor = await verifyVendorAuth(vendorId);
   const adminClient = getAdminClient();

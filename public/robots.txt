@@ -1,0 +1,34 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /vendor/
+Disallow: /account/
+Disallow: /auth/
+Disallow: /api/
+Disallow: /wishlist/
+Disallow: /checkout/
+Disallow: /receipt/
+Disallow: /wp-admin/
+Disallow: /wp-login.php
+Disallow: /wp-content/
+Disallow: /wp-includes/
+Disallow: /wp-json/
+Disallow: /xmlrpc.php
+Disallow: /feed/
+Disallow: /comments/feed/
+Disallow: /*?p=
+Disallow: /*?page_id=
+Disallow: /search
+
+User-agent: Googlebot
+Allow: /
+Disallow: /admin/
+Disallow: /vendor/
+Disallow: /account/
+Disallow: /auth/
+Disallow: /api/
+Disallow: /checkout/
+Disallow: /receipt/
+
+Sitemap: https://trivokenya.store/sitemap.xml
+Host: https://trivokenya.store

@@ -7,7 +7,6 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: "*",
         allow: "/",
         disallow: [
-          // Private app pages
           "/admin",
           "/vendor",
           "/account",
@@ -16,7 +15,6 @@ export default function robots(): MetadataRoute.Robots {
           "/wishlist",
           "/checkout",
           "/receipt",
-          // WordPress remnants — in case middleware doesn't catch them first
           "/wp-admin",
           "/wp-login.php",
           "/wp-content",
@@ -25,14 +23,11 @@ export default function robots(): MetadataRoute.Robots {
           "/xmlrpc.php",
           "/feed",
           "/comments/feed",
-          // WordPress query param pages
           "/*?p=",
           "/*?page_id=",
-          // Search result pages (infinite URL space)
           "/search",
         ],
       },
-      // Allow Googlebot to access everything not explicitly disallowed
       {
         userAgent: "Googlebot",
         allow: "/",

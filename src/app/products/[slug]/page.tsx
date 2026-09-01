@@ -55,8 +55,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!product) return { title: "Product Not Found | Trivo Kenya" };
 
-  const seoTitle = product.seo_title || `${product.name} | Trivo Kenya`;
-  const seoDesc = product.seo_description || product.description || `Shop ${product.name} at Trivo Kenya. Premium tech gadgets in Kenya. Best price guaranteed.`;
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES', maximumFractionDigits: 0 }).format(price);
+  };
+
+  const brandPrefix = product.brand ? `${product.brand} ` : "";
+  const seoTitle = product.seo_title || `${brandPrefix}${product.name} Price in Kenya | Trivo Kenya`;
+  const seoDesc = product.seo_description || product.description || `Buy ${brandPrefix}${product.name} at ${formatPrice(product.price)} in Kenya. Genuine phones & laptops at Trivo Kenya. Fast delivery.`;
   const tags = (product.tags as string[]) || [];
   const secondaryKw = product.secondary_keywords || "";
   const allKeywords = [product.focus_keyword, secondaryKw, ...tags].filter(Boolean).join(", ");
@@ -142,7 +147,6 @@ export default async function ProductPage({ params }: Props) {
         url: "https://trivokenya.store",
       },
       priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-      itemCondition: "https://schema.org/NewCondition",
     },
     merchantReturnPolicy: {
       "@type": "MerchantReturnPolicy",

@@ -37,15 +37,14 @@ const getCachedHeroSlides = unstable_cache(
   { tags: ["hero_slides"] }
 );
 
-// ✅ Let the layout's `default` title handle the homepage to avoid duplication
-// Layout default: "Trivo Kenya | Premium Tech Gadgets"
 export const metadata: Metadata = {
+  title: "Phones & Laptops in Kenya | Trivo Kenya",
   description:
-    "Shop genuine premium tech gadgets in Kenya. Wireless earbuds, smart home devices, car accessories, cables and more. Free delivery in Nairobi. Pay on delivery accepted.",
+    "Shop genuine phones, laptops, and tech accessories in Kenya. Find the best prices on iPhones, Samsung, HP, Lenovo, and MacBooks. Delivery across Kenya. Pay on delivery.",
   openGraph: {
-    title: "Trivo Kenya | Premium Tech Gadgets in Kenya",
+    title: "Phones & Laptops in Kenya — Honest Prices | Trivo Kenya",
     description:
-      "Shop genuine premium tech gadgets in Kenya. Wireless earbuds, smart home devices, car accessories. Free Nairobi delivery. Pay on delivery.",
+      "Shop genuine phones, laptops, and tech accessories in Kenya. Find the best prices on iPhones, Samsung, HP, Lenovo, and MacBooks. Delivery across Kenya.",
     url: "https://trivokenya.store",
     siteName: "Trivo Kenya",
     locale: "en_KE",
@@ -55,31 +54,31 @@ export const metadata: Metadata = {
         url: "https://trivokenya.store/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "Trivo Kenya — Premium Tech Gadgets",
+        alt: "Trivo Kenya — Phones & Laptops",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Trivo Kenya | Premium Tech Gadgets in Kenya",
+    title: "Phones & Laptops in Kenya | Trivo Kenya",
     description:
-      "Genuine tech gadgets delivered to your door in Kenya. Free Nairobi delivery, pay on delivery.",
+      "Genuine phones and laptops delivered to your door in Kenya. Free Nairobi delivery, pay on delivery.",
     images: ["https://trivokenya.store/og-image.jpg"],
   },
   alternates: {
     canonical: "https://trivokenya.store",
   },
   keywords: [
-    "buy gadgets Kenya",
-    "premium tech gadgets Kenya",
-    "wireless earbuds Kenya",
-    "smart home devices Kenya",
-    "car accessories Kenya",
-    "buy smartwatch Kenya",
-    "online gadget store Kenya",
+    "buy phones in Kenya",
+    "buy laptops in Kenya",
+    "smartphones in Kenya",
+    "iPhone price in Kenya",
+    "Samsung phone prices in Kenya",
+    "laptop prices in Kenya",
+    "HP laptops Kenya",
+    "MacBook price in Kenya",
     "Trivo Kenya",
-    "free delivery Nairobi gadgets",
-    "pay on delivery Kenya tech",
+    "cheap phones in Kenya",
   ],
 };
 

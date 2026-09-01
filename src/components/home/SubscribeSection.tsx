@@ -56,7 +56,7 @@ export default function SubscribeSection() {
             {/* VIP Sparkle Badge */}
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-bold uppercase tracking-wider backdrop-blur-md">
               <Sparkles className="h-3.5 w-3.5 animate-pulse" />
-              <span>VIP Stock Alerts • Kenya&apos;s Premium Tech Drops</span>
+               <span>VIP Stock Alerts • Phones & Laptops in Kenya</span>
             </div>
 
             <h2 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight text-white leading-[1.1]">
@@ -67,8 +67,8 @@ export default function SubscribeSection() {
             </h2>
 
             <p className="text-base sm:text-lg text-neutral-400 max-w-lg leading-relaxed">
-              Be the first to know the exact second fresh iPhone drops, exclusive Ecoflow power stations, and premium smart home gadgets touch down in Nairobi. Zero spam. 100% pure tech alerts.
-            </p>
+               Be the first to know about new phone and laptop arrivals, exclusive deals, and honest buying guides from Trivo Kenya. Zero spam. 100% useful alerts.
+             </p>
 
             <form onSubmit={handleSubmit} className="w-full max-w-md flex flex-col sm:flex-row gap-3 pt-2">
               <input

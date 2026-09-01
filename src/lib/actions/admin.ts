@@ -1,6 +1,5 @@
 "use server";
 
-import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@/lib/supabase/server";
 import { Database, type Json } from "@/types/database.types";
 import { revalidatePath, revalidateTag } from "next/cache";
@@ -8,33 +7,9 @@ import { upscaleImage } from "@/lib/upscale";
 import sanitizeHtml from "sanitize-html";
 import crypto from "crypto";
 import { rateLimitServerAction } from "@/lib/rate-limiter";
+import { slugify, generateUniqueSlug, validateUrl, getAdminClient } from "@/lib/server-utils";
 
 type Product = Database["public"]["Tables"]["products"]["Row"];
-
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/[\s_]+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 100);
-}
-
-function generateUniqueSlug(name: string): string {
-  const base = slugify(name) || "product";
-  const suffix = crypto.randomUUID().slice(0, 6);
-  return `${base}-${suffix}`;
-}
-
-function getAdminClient() {
-  return createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { cookies: { getAll: () => [], setAll: () => {} } }
-  );
-}
 
 async function verifyAdminAuth(requiredRole?: "admin" | "superadmin") {
   const supabase = await createClient();
@@ -56,19 +31,11 @@ async function verifyAdminAuth(requiredRole?: "admin" | "superadmin") {
   return user;
 }
 
-function validateUrl(input: string): boolean {
-  try {
-    const url = new URL(input);
-    if (url.protocol !== "https:" && url.protocol !== "http:") return false;
-    if (url.hostname === "localhost" || url.hostname === "127.0.0.1" || url.hostname === "0.0.0.0") return false;
-    if (url.hostname.startsWith("169.254") || url.hostname.startsWith("10.") || url.hostname.startsWith("172.") || url.hostname.startsWith("192.168")) return false;
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function handleImageUpload(supabase: ReturnType<typeof getAdminClient>, image_file: File | null, image_url: string): Promise<string> {
+async function handleImageUpload(
+  supabase: ReturnType<typeof getAdminClient>,
+  image_file: File | null,
+  image_url: string
+): Promise<string> {
   if (image_file && image_file.size > 0) {
     const maxSize = 5 * 1024 * 1024;
     if (image_file.size > maxSize) {
@@ -134,7 +101,7 @@ async function handleImageUpload(supabase: ReturnType<typeof getAdminClient>, im
 }
 
 export async function createProduct(formData: FormData) {
-  const { allowed } = rateLimitServerAction("create-product", 10, 60000);
+  const { allowed } = await rateLimitServerAction("create-product", 10, 60000);
   if (!allowed) throw new Error("Too many requests. Please slow down.");
   await verifyAdminAuth();
   const supabase = getAdminClient();
@@ -310,27 +277,26 @@ export async function deleteProduct(id: string) {
   (revalidateTag as any)("products");
 }
 
-export async function getAdminStats() {
+export async function getAdminStatsFull() {
   await verifyAdminAuth();
   const supabase = getAdminClient();
 
-  const { data: products, error: productsError } = await supabase
-    .from("products")
-    .select("*");
+  const [productsResult, { count: subscribersCount }, { count: ordersCount }, ordersTotalResult] =
+    await Promise.all([
+      supabase.from("products").select("*"),
+      supabase.from("subscribers").select("*", { count: "exact", head: true }),
+      supabase.from("admin_orders").select("*", { count: "exact", head: true }),
+      supabase.from("admin_orders").select("total"),
+    ]);
 
-  if (productsError) throw new Error(productsError.message);
+  if (productsResult.error) throw new Error(productsResult.error.message);
 
-  const { count: subscribersCount, error: subsError } = await supabase
-    .from("subscribers")
-    .select("*", { count: "exact", head: true });
+  const totalProducts = productsResult.data.length;
+  const totalStock = productsResult.data.reduce((sum: number, p) => sum + (p.stock || 0), 0);
+  const lowStock = productsResult.data.filter((p) => p.stock < 3).length;
+  const revenue = (ordersTotalResult.data as { total: number }[] | null)?.reduce((sum: number, o) => sum + (o.total || 0), 0) || 0;
 
-  if (subsError) throw new Error(subsError.message);
-
-  const totalProducts = products.length;
-  const totalStock = products.reduce((sum, p) => sum + (p.stock || 0), 0);
-  const lowStock = products.filter((p) => p.stock < 3).length;
-
-  return { totalProducts, totalStock, subscribersCount: subscribersCount || 0, lowStock };
+  return { totalProducts, totalStock, subscribersCount: subscribersCount || 0, lowStock, revenue, ordersCount: ordersCount || 0 };
 }
 
 export async function getAdminProducts() {
@@ -359,28 +325,6 @@ export async function getAdminSubscribers() {
   return data;
 }
 
-export async function getAdminStatsFull() {
-  await verifyAdminAuth();
-  const supabase = getAdminClient();
-
-  const [productsResult, { count: subscribersCount }, { count: ordersCount }, ordersTotalResult] =
-    await Promise.all([
-      supabase.from("products").select("*"),
-      supabase.from("subscribers").select("*", { count: "exact", head: true }),
-      supabase.from("admin_orders").select("*", { count: "exact", head: true }),
-      supabase.from("admin_orders").select("total"),
-    ]);
-
-  if (productsResult.error) throw new Error(productsResult.error.message);
-
-  const totalProducts = productsResult.data.length;
-  const totalStock = productsResult.data.reduce((sum: number, p) => sum + (p.stock || 0), 0);
-  const lowStock = productsResult.data.filter((p) => p.stock < 3).length;
-  const revenue = (ordersTotalResult.data as { total: number }[] | null)?.reduce((sum: number, o) => sum + (o.total || 0), 0) || 0;
-
-  return { totalProducts, totalStock, subscribersCount: subscribersCount || 0, lowStock, revenue, ordersCount: ordersCount || 0 };
-}
-
 export async function getAllOrders() {
   await verifyAdminAuth();
   const supabase = getAdminClient();
@@ -399,11 +343,15 @@ export async function getTodaysOrderCount() {
   const supabase = getAdminClient();
 
   const today = new Date().toISOString().split("T")[0];
+  const tomorrow = new Date(new Date().setDate(new Date().getDate() + 1))
+    .toISOString()
+    .split("T")[0];
+
   const { count, error } = await supabase
     .from("admin_orders")
     .select("*", { count: "exact", head: true })
     .gte("created_at", today)
-    .lt("created_at", new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split("T")[0]);
+    .lt("created_at", tomorrow);
 
   if (error) throw new Error(error.message);
   return count || 0;
@@ -423,21 +371,23 @@ export async function createOrder(formData: FormData) {
     throw new Error("Invalid email format.");
   }
   let items: Json = [];
-  try { const parsed = JSON.parse(formData.get("items") as string); if (Array.isArray(parsed)) items = parsed as Json; } catch { items = []; }
+  try {
+    const parsed = JSON.parse(formData.get("items") as string);
+    if (Array.isArray(parsed)) items = parsed as Json;
+  } catch {
+    items = [];
+  }
   const subtotal = Math.max(0, parseInt(formData.get("subtotal") as string) || 0);
   const delivery_fee = Math.max(0, parseInt(formData.get("delivery_fee") as string) || 0);
   const total = Math.max(0, parseInt(formData.get("total") as string) || 0);
   if (total <= 0) throw new Error("Total must be greater than 0.");
   const mpesa_reference = (formData.get("mpesa_reference") as string || "").toUpperCase().trim();
   if (!mpesa_reference) throw new Error("M-Pesa reference is required.");
-  const vendor_id = formData.get("vendor_id") as string || null;
+  const vendor_id = (formData.get("vendor_id") as string) || null;
   const notes = (formData.get("notes") as string || "").trim() || null;
 
   const now = new Date();
-  const yyyy = now.getFullYear().toString();
-  const mm = (now.getMonth() + 1).toString().padStart(2, "0");
-  const dd = now.getDate().toString().padStart(2, "0");
-  const dateStr = `${yyyy}${mm}${dd}`;
+  const dateStr = now.toISOString().slice(0, 10).replace(/-/g, "");
   const rand = crypto.randomUUID().slice(0, 4).toUpperCase();
   const receipt_number = `TRV-${dateStr}-${rand}`;
 
@@ -483,7 +433,8 @@ export async function deleteOrder(orderId: string) {
 
   const { error } = await supabase
     .from("admin_orders")
-    .delete().eq("id", orderId);
+    .delete()
+    .eq("id", orderId);
 
   if (error) throw new Error(error.message);
 }

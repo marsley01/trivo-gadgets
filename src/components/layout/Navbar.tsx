@@ -61,22 +61,37 @@ export default function Navbar() {
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-8 text-sm font-bold text-muted-foreground">
-          <Link href="/" className="hover:text-foreground transition-colors py-2">Store Home</Link>
-          
           <div className="relative group py-2">
-            <button className="flex items-center gap-1 hover:text-foreground transition-colors">
-              Categories <ChevronDown className="h-4 w-4 transition-transform group-hover:rotate-180" />
-            </button>
+            <Link href="/categories/phones" className="flex items-center gap-1 hover:text-foreground transition-colors">
+              Phones <ChevronDown className="h-4 w-4 transition-transform group-hover:rotate-180" />
+            </Link>
             <div className="absolute top-full left-0 hidden group-hover:block w-48 pt-2">
               <div className="bg-card border border-default rounded-xl p-2 shadow-xl space-y-1 backdrop-blur-md">
-                <Link href="/categories/audio" className="block px-3 py-2 rounded-lg hover:bg-surface text-foreground transition-colors">Audio</Link>
-                <Link href="/categories/car-accessories" className="block px-3 py-2 rounded-lg hover:bg-surface text-foreground transition-colors">Car Accessories</Link>
-                <Link href="/categories/smart-home" className="block px-3 py-2 rounded-lg hover:bg-surface text-foreground transition-colors">Smart Home</Link>
-                <Link href="/categories/cables" className="block px-3 py-2 rounded-lg hover:bg-surface text-foreground transition-colors">Cables & Chargers</Link>
+                <Link href="/categories/iphones" className="block px-3 py-2 rounded-lg hover:bg-surface text-foreground transition-colors">Apple iPhones</Link>
+                <Link href="/categories/samsung" className="block px-3 py-2 rounded-lg hover:bg-surface text-foreground transition-colors">Samsung</Link>
+                <Link href="/categories/tecno" className="block px-3 py-2 rounded-lg hover:bg-surface text-foreground transition-colors">Tecno</Link>
+                <Link href="/categories/redmi" className="block px-3 py-2 rounded-lg hover:bg-surface text-foreground transition-colors">Redmi & Xiaomi</Link>
               </div>
             </div>
           </div>
 
+          <div className="relative group py-2">
+            <Link href="/categories/laptops" className="flex items-center gap-1 hover:text-foreground transition-colors">
+              Laptops <ChevronDown className="h-4 w-4 transition-transform group-hover:rotate-180" />
+            </Link>
+            <div className="absolute top-full left-0 hidden group-hover:block w-48 pt-2">
+              <div className="bg-card border border-default rounded-xl p-2 shadow-xl space-y-1 backdrop-blur-md">
+                <Link href="/categories/hp" className="block px-3 py-2 rounded-lg hover:bg-surface text-foreground transition-colors">HP</Link>
+                <Link href="/categories/lenovo" className="block px-3 py-2 rounded-lg hover:bg-surface text-foreground transition-colors">Lenovo</Link>
+                <Link href="/categories/dell" className="block px-3 py-2 rounded-lg hover:bg-surface text-foreground transition-colors">Dell</Link>
+                <Link href="/categories/macbooks" className="block px-3 py-2 rounded-lg hover:bg-surface text-foreground transition-colors">MacBooks</Link>
+              </div>
+            </div>
+          </div>
+
+          <Link href="/products?featured=true" className="hover:text-foreground transition-colors py-2">Deals</Link>
+          <Link href="/guides" className="hover:text-foreground transition-colors py-2">Buying Guides</Link>
+          
           <div className="relative group py-2">
             <button className="flex items-center gap-1 hover:text-foreground transition-colors">
               Support <ChevronDown className="h-4 w-4 transition-transform group-hover:rotate-180" />
@@ -92,7 +107,6 @@ export default function Navbar() {
           </div>
 
           <Link href="/about" className="hover:text-foreground transition-colors py-2">About Us</Link>
-          <Link href="/blog" className="hover:text-foreground transition-colors py-2">Blog</Link>
         </nav>
 
         <div className="flex items-center gap-4 text-foreground">
@@ -125,30 +139,40 @@ export default function Navbar() {
       {mobileMenuOpen && (
         <nav className="md:hidden border-t border-default bg-background/95 backdrop-blur-md animate-in slide-in-from-top-2 duration-200 overflow-y-auto max-h-[calc(100vh-4rem)]">
           <div className="flex flex-col px-6 py-6 gap-6 text-sm">
-            {/* Main Links */}
             <div className="flex flex-col gap-3">
-              <Link href="/" onClick={() => setMobileMenuOpen(false)} className="font-bold text-foreground hover:text-accent transition-colors py-1">Store Home</Link>
-              <Link href="/about" onClick={() => setMobileMenuOpen(false)} className="font-bold text-foreground hover:text-accent transition-colors py-1">About Trivo</Link>
-              <Link href="/blog" onClick={() => setMobileMenuOpen(false)} className="font-bold text-foreground hover:text-accent transition-colors py-1">Blog</Link>
+              <Link href="/" onClick={() => setMobileMenuOpen(false)} className="font-bold text-foreground hover:text-accent transition-colors py-1">Home</Link>
+              <Link href="/products?featured=true" onClick={() => setMobileMenuOpen(false)} className="font-bold text-foreground hover:text-accent transition-colors py-1">Top Deals</Link>
+              <Link href="/guides" onClick={() => setMobileMenuOpen(false)} className="font-bold text-foreground hover:text-accent transition-colors py-1">Buying Guides</Link>
             </div>
 
-            {/* Categories */}
+            {/* Phones */}
             <div className="space-y-3">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Shop Collections</span>
+              <Link href="/categories/phones" onClick={() => setMobileMenuOpen(false)} className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground">Phones</Link>
               <div className="grid grid-cols-1 gap-2 pl-2 border-l border-default">
-                <Link href="/categories/audio" onClick={() => setMobileMenuOpen(false)} className="text-subtle hover:text-accent transition-colors py-1">Audio</Link>
-                <Link href="/categories/car-accessories" onClick={() => setMobileMenuOpen(false)} className="text-subtle hover:text-accent transition-colors py-1">Car Accessories</Link>
-                <Link href="/categories/smart-home" onClick={() => setMobileMenuOpen(false)} className="text-subtle hover:text-accent transition-colors py-1">Smart Home</Link>
-                <Link href="/categories/cables" onClick={() => setMobileMenuOpen(false)} className="text-subtle hover:text-accent transition-colors py-1">Cables & Chargers</Link>
+                <Link href="/categories/iphones" onClick={() => setMobileMenuOpen(false)} className="text-subtle hover:text-accent transition-colors py-1">Apple iPhones</Link>
+                <Link href="/categories/samsung" onClick={() => setMobileMenuOpen(false)} className="text-subtle hover:text-accent transition-colors py-1">Samsung</Link>
+                <Link href="/categories/tecno" onClick={() => setMobileMenuOpen(false)} className="text-subtle hover:text-accent transition-colors py-1">Tecno</Link>
+                <Link href="/categories/redmi" onClick={() => setMobileMenuOpen(false)} className="text-subtle hover:text-accent transition-colors py-1">Redmi & Xiaomi</Link>
+              </div>
+            </div>
+
+            {/* Laptops */}
+            <div className="space-y-3">
+              <Link href="/categories/laptops" onClick={() => setMobileMenuOpen(false)} className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground">Laptops</Link>
+              <div className="grid grid-cols-1 gap-2 pl-2 border-l border-default">
+                <Link href="/categories/hp" onClick={() => setMobileMenuOpen(false)} className="text-subtle hover:text-accent transition-colors py-1">HP</Link>
+                <Link href="/categories/lenovo" onClick={() => setMobileMenuOpen(false)} className="text-subtle hover:text-accent transition-colors py-1">Lenovo</Link>
+                <Link href="/categories/dell" onClick={() => setMobileMenuOpen(false)} className="text-subtle hover:text-accent transition-colors py-1">Dell</Link>
+                <Link href="/categories/macbooks" onClick={() => setMobileMenuOpen(false)} className="text-subtle hover:text-accent transition-colors py-1">MacBooks</Link>
               </div>
             </div>
 
             {/* Support */}
             <div className="space-y-3">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Customer Support</span>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Support & About</span>
               <div className="grid grid-cols-1 gap-2 pl-2 border-l border-default">
-                <Link href="/how-to-order" onClick={() => setMobileMenuOpen(false)} className="text-subtle hover:text-accent transition-colors py-1">How to Order</Link>
-                <Link href="/delivery" onClick={() => setMobileMenuOpen(false)} className="text-subtle hover:text-accent transition-colors py-1">Delivery Information</Link>
+                <Link href="/about" onClick={() => setMobileMenuOpen(false)} className="text-subtle hover:text-accent transition-colors py-1">About Trivo</Link>
+                <Link href="/delivery" onClick={() => setMobileMenuOpen(false)} className="text-subtle hover:text-accent transition-colors py-1">Delivery Info</Link>
                 <Link href="/returns" onClick={() => setMobileMenuOpen(false)} className="text-subtle hover:text-accent transition-colors py-1">Returns & Warranty</Link>
                 <Link href="/faq" onClick={() => setMobileMenuOpen(false)} className="text-subtle hover:text-accent transition-colors py-1">FAQs & Help</Link>
               </div>
@@ -157,7 +181,7 @@ export default function Navbar() {
         </nav>
       )}
 
-      {/* iTey Store Style Search Modal Overlay */}
+      {/* Search Modal */}
       {searchOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xl animate-in fade-in duration-200 flex flex-col items-center pt-24 px-4">
           <div className="w-full max-w-2xl bg-card border border-subtle/20 rounded-2xl p-2 flex items-center shadow-2xl relative">
@@ -168,7 +192,7 @@ export default function Navbar() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search premium gadgets..."
+                placeholder="Search phones, laptops & brands..."
                 className="w-full bg-transparent px-4 py-3 text-lg text-foreground placeholder:text-muted-foreground focus:outline-none"
                 autoFocus
               />
@@ -181,15 +205,14 @@ export default function Navbar() {
             </button>
           </div>
 
-          {/* Results Box / Helper */}
           <div className="w-full max-w-2xl bg-card/60 border border-subtle/10 rounded-2xl p-8 mt-4 text-center text-muted-foreground shadow-2xl backdrop-blur-md">
             {searchQuery.trim() ? (
               <p className="text-base font-medium text-foreground">
-                Press <kbd className="px-2 py-1 bg-surface rounded text-accent font-mono text-xs">Enter</kbd> to explore premium gadgets for &ldquo;{searchQuery}&rdquo;
+                Press <kbd className="px-2 py-1 bg-surface rounded text-accent font-mono text-xs">Enter</kbd> to search for &ldquo;{searchQuery}&rdquo;
               </p>
             ) : (
               <p className="text-sm">
-                Type above to search our exclusive catalog of tech gadgets, smart home devices, and accessories.
+                Type above to search our catalog of smartphones, laptops, and tech accessories.
               </p>
             )}
           </div>

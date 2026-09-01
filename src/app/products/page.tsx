@@ -100,10 +100,10 @@ export default function ProductsPage() {
             <div className="flex flex-col items-center text-center max-w-3xl mx-auto">
               <ShoppingBag className="h-10 w-10 text-accent mb-4" />
               <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-foreground mb-4">
-                All <span className="text-accent">Products</span>
+                Phones & <span className="text-accent">Laptops</span>
               </h1>
               <p className="text-muted-foreground text-base md:text-lg max-w-xl">
-                Browse our full catalog of premium tech gadgets and accessories. Free delivery in Nairobi, pay on delivery.
+                Browse our full catalog of genuine phones and laptops in Kenya. Free Nairobi delivery, pay on delivery.
               </p>
             </div>
           </div>

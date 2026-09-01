@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sendAdminNotification, sendOrderConfirmation } from "@/lib/notifications";
 import { rateLimit } from "@/lib/rate-limiter";
+import { timingSafeEqual } from "@/lib/server-utils";
+import { sendAdminNotification, sendOrderConfirmation } from "@/lib/notifications";
 
 // Field length limits to prevent payload bloat / injection attacks
 const LIMITS = {
@@ -17,12 +18,33 @@ function truncate(value: unknown, max: number): string {
   return String(value ?? "").slice(0, max);
 }
 
+/** Verify caller is an internal service, not a random external request. */
+function isAuthorized(req: NextRequest): boolean {
+  const secret = process.env.NOTIFY_SECRET;
+  if (!secret) {
+    // If no secret is configured, block all calls (fail-safe)
+    console.error("NOTIFY_SECRET is not set — /api/notify is disabled.");
+    return false;
+  }
+  const authHeader = req.headers.get("x-notify-secret") ?? "";
+  return timingSafeEqual(authHeader, secret);
+}
+
 export async function POST(request: NextRequest) {
+  // ── Authorization ────────────────────────────────────────────────────────────
+  if (!isAuthorized(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // ── Rate limiting ────────────────────────────────────────────────────────────
   const rawIp = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
   const ip = rawIp.split(",")[0].trim();
   const { allowed, retryAfter } = rateLimit(`notify:${ip}`, 20, 60000);
   if (!allowed) {
-    return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "Retry-After": String(retryAfter) } });
+    return NextResponse.json(
+      { error: "Too many requests" },
+      { status: 429, headers: { "Retry-After": String(retryAfter) } }
+    );
   }
 
   try {
@@ -38,7 +60,10 @@ export async function POST(request: NextRequest) {
         const safeOrderId = truncate(orderId, LIMITS.orderId);
         const safeName = truncate(customerName, LIMITS.name);
         const safeTotal = Number(total) || 0;
-        await sendAdminNotification({ type: "new_order", data: { orderId: safeOrderId, customerName: safeName, total: safeTotal, items: Array.isArray(items) ? items.length : 0 } });
+        await sendAdminNotification({
+          type: "new_order",
+          data: { orderId: safeOrderId, customerName: safeName, total: safeTotal, items: Array.isArray(items) ? items.length : 0 },
+        });
         if (customerEmail && typeof customerEmail === "string") {
           await sendOrderConfirmation(truncate(customerEmail, LIMITS.email), safeOrderId, items || [], safeTotal);
         }

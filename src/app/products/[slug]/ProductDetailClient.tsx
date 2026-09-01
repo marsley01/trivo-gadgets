@@ -205,9 +205,6 @@ export default function ProductDetailClient({
                 <span className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground">
                   KES {displayPrice.toLocaleString()}
                 </span>
-                <span className="text-lg text-muted-foreground line-through">
-                  KES {Math.round(displayPrice * 1.15).toLocaleString()}
-                </span>
                 {displayStock > 0 && displayStock < 5 && (
                   <span className="text-sm text-amber-500 font-medium">
                     Only {displayStock} left
@@ -296,6 +293,9 @@ export default function ProductDetailClient({
                   </div>
                 </div>
               </div>
+
+              {/* Buying Summary */}
+              <BuyingSummary product={product} displayPrice={displayPrice} displayStock={displayStock} />
             </div>
           </div>
 
@@ -404,6 +404,133 @@ function ReviewRating({ productId }: { productId: string }) {
       ) : (
         <span className="text-sm text-muted-foreground">No reviews yet</span>
       )}
+    </div>
+  );
+}
+
+function BuyingSummary({ product, displayPrice, displayStock }: { product: Product; displayPrice: number; displayStock: number }) {
+  const specs = useMemo(() => (product.specifications as Record<string, string>) || {}, [product.specifications]);
+  const brand = product.brand || "";
+  const category = product.category || "";
+  const isPhone = category.toLowerCase().includes("phone") || ["Apple", "Samsung", "Tecno", "Redmi", "Xiaomi", "Google", "Infinix"].includes(brand);
+  const isLaptop = category.toLowerCase().includes("laptop") || ["HP", "Lenovo", "Dell", "Apple", "ASUS", "Acer"].includes(brand);
+
+  const getSpec = (keys: string[]) => {
+    for (const k of keys) {
+      const found = Object.entries(specs).find(([key]) => key.toLowerCase().includes(k.toLowerCase()));
+      if (found) return found[1];
+    }
+    return null;
+  };
+
+  const ram = getSpec(["RAM", "Memory"]) || "";
+  const storage = getSpec(["Storage", "ROM", "SSD", "HDD"]) || "";
+  const processor = getSpec(["Processor", "CPU", "Chip"]) || "";
+  const display = getSpec(["Display", "Screen", "Size"]) || "";
+  const battery = getSpec(["Battery", "mAh"]) || "";
+  const graphics = getSpec(["Graphics", "GPU"]) || "";
+
+  const parseGB = (val: string) => {
+    const match = val.match(/(\d+)\s*GB/);
+    return match ? parseInt(match[1]) : 0;
+  };
+
+  const ramGB = parseGB(ram);
+  const storageGB = parseGB(storage);
+
+  const isAvailable = displayStock > 0;
+  const isLowStock = displayStock > 0 && displayStock < 5;
+
+  let summary = "";
+  const points: string[] = [];
+
+  if (isPhone) {
+    if (ramGB >= 8 && storageGB >= 128) {
+      points.push("This phone is suitable for everyday use, social media, streaming, and light gaming.");
+    } else if (ramGB >= 4) {
+      points.push("This phone handles everyday tasks well — calls, messaging, social media, and casual use.");
+    } else {
+      points.push("This is a basic smartphone suitable for calls, messaging, and light apps.");
+    }
+
+    if (brand === "Apple") {
+      points.push("iPhones are known for smooth performance, long software support, and strong resale value in Kenya.");
+    } else if (brand === "Samsung") {
+      points.push("Samsung phones offer great displays, capable cameras, and solid build quality.");
+    } else if (["Tecno", "Infinix"].includes(brand)) {
+      points.push("Tecno and Infinix offer great value for money with solid battery life and modern features.");
+    } else if (["Redmi", "Xiaomi"].includes(brand)) {
+      points.push("Redmi and Xiaomi phones deliver excellent specs for the price, making them great value options in Kenya.");
+    }
+
+    if (displayPrice < 20000) {
+      points.push("At this price, it&apos;s a solid budget option for students and first-time smartphone buyers in Kenya.");
+    } else if (displayPrice < 50000) {
+      points.push("Mid-range pricing with good value — suitable for students, professionals, and everyday use.");
+    } else if (displayPrice >= 100000) {
+      points.push("Premium pricing reflects flagship features, build quality, and brand value.");
+    }
+  } else if (isLaptop) {
+    if (ramGB >= 16 && storageGB >= 512) {
+      points.push("This laptop is suitable for programming, content creation, and multitasking without slowdowns.");
+    } else if (ramGB >= 8 && storageGB >= 256) {
+      points.push("This laptop handles office work, browsing, streaming, and student assignments comfortably.");
+    } else {
+      points.push("This laptop is suitable for basic tasks like browsing, emails, and document editing.");
+    }
+
+    if (graphics && graphics.toLowerCase().includes("nvidia") || graphics && graphics.toLowerCase().includes("amd") && graphics.toLowerCase().includes("graphics")) {
+      points.push("Dedicated graphics make this laptop capable of gaming and creative work like video editing.");
+    }
+
+    if (brand === "Apple") {
+      points.push("MacBooks are known for build quality, long battery life, and excellent resale value in Kenya.");
+    } else if (brand === "HP") {
+      points.push("HP laptops offer reliable performance and good build quality for work and study.");
+    } else if (brand === "Lenovo") {
+      points.push("Lenovo laptops, especially ThinkPad and IdeaPad, are known for durability and great keyboards.");
+    } else if (brand === "Dell") {
+      points.push("Dell laptops offer solid build quality and reliable performance for professionals.");
+    }
+
+    if (displayPrice < 50000) {
+      points.push("Affordable pricing makes this a good entry-level option for students in Kenya.");
+    } else if (displayPrice < 100000) {
+      points.push("Mid-range pricing with capable specs — suitable for students, professionals, and small business use.");
+    } else if (displayPrice >= 150000) {
+      points.push("Premium pricing reflects high-end specs, build quality, and performance for demanding tasks.");
+    }
+  }
+
+  if (points.length === 0) {
+    points.push("This product offers genuine quality at a competitive price. Contact us on WhatsApp for specific questions about suitability.");
+  }
+
+  summary = points.join(" ");
+
+  return (
+    <div className="border border-subtle rounded-2xl bg-card/50 p-6 md:p-8 space-y-4">
+      <h4 className="text-xs font-bold uppercase tracking-widest text-foreground flex items-center gap-1.5">
+        <Shield className="h-4.5 w-4.5 text-accent" />
+        Buying Summary
+      </h4>
+      <p className="text-sm md:text-base text-subtle leading-relaxed">{summary}</p>
+      <div className="flex flex-wrap items-center gap-4 text-xs pt-3 border-t border-subtle">
+        {isAvailable && (
+          <div className="flex items-center gap-1.5 text-muted">
+            <CheckCircle className="h-4 w-4 text-accent" />
+            <span>{isLowStock ? `Only ${displayStock} left` : "In Stock"}</span>
+          </div>
+        )}
+        <div className="flex items-center gap-1.5 text-muted">
+          <Shield className="h-4 w-4 text-accent" />
+          <span>Warranty Included</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-muted">
+          <Truck className="h-4 w-4 text-accent" />
+          <span>Free Nairobi Delivery</span>
+        </div>
+      </div>
     </div>
   );
 }

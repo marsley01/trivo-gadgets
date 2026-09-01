@@ -7,24 +7,24 @@ import { WHATSAPP_NUMBER } from "@/lib/config";
 
 export const metadata: Metadata = {
   title: "How to Order | Trivo Kenya",
-  description: "Ordering your tech from Trivo Kenya is super easy. Choose between a quick WhatsApp chat or our standard online checkout.",
+  description: "Ordering your phone or laptop from Trivo Kenya is easy. Choose between WhatsApp or website checkout. Free Nairobi delivery, pay on delivery.",
 };
 
 const steps = [
   {
     icon: ShoppingBag,
     title: "1. Find What You Need",
-    desc: "Browse through our collection of audio gear, smart home gadgets, fast chargers, and car accessories. We keep it simple with only the best items in stock.",
+    desc: "Browse our collection of genuine smartphones and laptops. We stock iPhones, Samsung, Tecno, Xiaomi, HP, Lenovo, Dell, and MacBooks. Every product page shows clear specs, price, and availability.",
   },
   {
     icon: MessageSquare,
     title: "2. Order via WhatsApp or Cart",
-    desc: "Want it fast? Just tap the green WhatsApp button on any product page. It opens a chat directly with our team, showing the exact item and price so we can assist you right away.",
+    desc: "Want it fast? Just tap the green WhatsApp button on any product page. It opens a chat directly with our team, showing the exact item and price so we can confirm availability and assist you right away.",
   },
   {
     icon: Truck,
     title: "3. Delivery Setup",
-    desc: "Let us know your location. If you're in Nairobi, we arrange free hand delivery within 1 to 2 days. For upcountry orders, we ship securely via trusted couriers like Easy Coach, G4S, or Fargo Courier (takes about 2 to 3 days).",
+    desc: "Let us know your location. If you&apos;re in Nairobi, we arrange free hand delivery within 1 to 2 days. For upcountry orders, we ship securely via trusted couriers like Easy Coach, G4S, or Fargo Courier (takes about 2 to 3 days).",
   },
   {
     icon: CheckCircle2,

@@ -9,7 +9,7 @@
 
 const rateMap = new Map<string, { count: number; resetAt: number }>();
 
-/** Remove all entries whose window has already expired. Call this periodically on writes. */
+/** Remove all entries whose window has already expired. Called periodically on writes. */
 function pruneExpired(): void {
   const now = Date.now();
   for (const [key, entry] of rateMap) {
@@ -48,28 +48,27 @@ export function rateLimit(
   return { allowed: true, retryAfter: 0 };
 }
 
-export function getClientIp(): string {
-  try {
-    // Using dynamic require to avoid import issues in edge/server contexts
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { headers } = require("next/headers");
-    const headersList = headers();
-    const ip =
-      headersList.get("x-forwarded-for") ||
-      headersList.get("x-real-ip") ||
-      "unknown";
-    return typeof ip === "string" ? ip.split(",")[0].trim() : "unknown";
-  } catch {
-    return "unknown";
-  }
-}
-
-export function rateLimitServerAction(
+/**
+ * Rate-limit a server action by caller IP.
+ * Reads the IP from the Next.js `headers()` API.
+ * Falls back to "unknown" if headers are not available (e.g., during tests).
+ */
+export async function rateLimitServerAction(
   prefix: string,
   maxAttempts: number,
   windowMs: number
-): { allowed: boolean; retryAfter: number } {
-  const ip = getClientIp();
+): Promise<{ allowed: boolean; retryAfter: number }> {
+  let ip = "unknown";
+  try {
+    const { headers } = await import("next/headers");
+    const headersList = await headers();
+    const forwarded = headersList.get("x-forwarded-for");
+    const realIp = headersList.get("x-real-ip");
+    const raw = forwarded || realIp || "unknown";
+    ip = raw.split(",")[0].trim();
+  } catch {
+    // Headers unavailable — use fallback key
+  }
   return rateLimit(`${prefix}:${ip}`, maxAttempts, windowMs);
 }
 

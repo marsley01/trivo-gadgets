@@ -66,10 +66,10 @@ export default function HeroSlideshow({ slides }: { slides: HeroSlide[] }) {
         <div className="absolute inset-0 bg-gradient-to-br from-neutral-900 via-neutral-950 to-neutral-900" />
         <div className="relative z-10 text-center px-6">
           <h1 className="text-4xl md:text-6xl font-black text-white mb-4">
-            Premium Tech Gadgets
+            Phones & Laptops in Kenya
           </h1>
           <p className="text-neutral-400 mb-8 max-w-md mx-auto">
-            Discover our collection of high-quality electronics.
+            Discover our collection of genuine smartphones, laptops, and accessories at honest prices.
           </p>
           <Link
             href="/#products"

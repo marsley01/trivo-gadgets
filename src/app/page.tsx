@@ -11,17 +11,20 @@ type HeroSlide = Database["public"]["Tables"]["hero_slides"]["Row"];
 
 export const revalidate = 3600;
 
-const supabase = createSupabaseClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
 async function getProducts(): Promise<Product[]> {
+  const supabase = createSupabaseClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
   const { data } = await supabase.from("products").select("*").order("created_at", { ascending: false });
   return (data || []) as Product[];
 }
 
 async function getHeroSlides(): Promise<HeroSlide[]> {
+  const supabase = createSupabaseClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
   const { data } = await supabase.from("hero_slides").select("*").eq("is_active", true).order("sort_order", { ascending: true });
   return (data || []) as HeroSlide[];
 }

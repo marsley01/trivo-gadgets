@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { unstable_cache } from "next/cache";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { Database } from "@/types/database.types";
 import Navbar from "@/components/layout/Navbar";
@@ -10,32 +9,22 @@ import ProductGrid from "@/components/product/ProductGrid";
 type Product = Database["public"]["Tables"]["products"]["Row"];
 type HeroSlide = Database["public"]["Tables"]["hero_slides"]["Row"];
 
-// Revalidate every hour just in case tags fail, but primary cache clearing is via tags.
 export const revalidate = 3600;
 
-// Create a static client for public data fetching so it doesn't access cookies (which breaks static rendering)
 const supabase = createSupabaseClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-const getCachedProducts = unstable_cache(
-  async () => {
-    const { data } = await supabase.from("products").select("*").order("created_at", { ascending: false });
-    return (data || []) as Product[];
-  },
-  ["products-homepage"],
-  { tags: ["products"] }
-);
+async function getProducts(): Promise<Product[]> {
+  const { data } = await supabase.from("products").select("*").order("created_at", { ascending: false });
+  return (data || []) as Product[];
+}
 
-const getCachedHeroSlides = unstable_cache(
-  async () => {
-    const { data } = await supabase.from("hero_slides").select("*").eq("is_active", true).order("sort_order", { ascending: true });
-    return (data || []) as HeroSlide[];
-  },
-  ["hero-slides-homepage"],
-  { tags: ["hero_slides"] }
-);
+async function getHeroSlides(): Promise<HeroSlide[]> {
+  const { data } = await supabase.from("hero_slides").select("*").eq("is_active", true).order("sort_order", { ascending: true });
+  return (data || []) as HeroSlide[];
+}
 
 export const metadata: Metadata = {
   title: "Phones & Laptops in Kenya | Trivo Kenya",
@@ -88,8 +77,8 @@ export default async function Home() {
 
   try {
     const [productsRes, slidesRes] = await Promise.all([
-      getCachedProducts(),
-      getCachedHeroSlides(),
+      getProducts(),
+      getHeroSlides(),
     ]);
 
     products = productsRes;

@@ -82,6 +82,7 @@ export default function RootLayout({
         }} />
       </head>
       <body className={`${inter.variable} font-sans bg-background text-foreground antialiased min-h-screen flex flex-col overflow-x-hidden selection:bg-accent selection:text-black`}>
+        {children}
         {/* JSON-LD Structured Data */}
         <script
           type="application/ld+json"

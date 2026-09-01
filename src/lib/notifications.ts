@@ -37,15 +37,15 @@ export async function sendAdminNotification(event: NotificationEvent): Promise<v
     }
     case "new_review": {
       const { productName, customerName, rating, text } = event.data;
-      subject = `New Review — ${rating}★ on ${escapeHtml(productName)}`;
+      subject = `New Review — ${rating}★ on ${productName}`;
       html = `
         <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px">
           <h2 style="color:#16a34a;margin:0 0 16px">New Product Review</h2>
           <table style="width:100%;border-collapse:collapse;font-size:14px">
-            <tr><td style="padding:8px 0;color:#666">Product</td><td style="padding:8px 0;font-weight:600">${escapeHtml(productName)}</td></tr>
-            <tr><td style="padding:8px 0;color:#666">Customer</td><td style="padding:8px 0;font-weight:600">${escapeHtml(customerName)}</td></tr>
+            <tr><td style="padding:8px 0;color:#666">Product</td><td style="padding:8px 0;font-weight:600">${productName}</td></tr>
+            <tr><td style="padding:8px 0;color:#666">Customer</td><td style="padding:8px 0;font-weight:600">${customerName}</td></tr>
             <tr><td style="padding:8px 0;color:#666">Rating</td><td style="padding:8px 0;font-weight:600">${"★".repeat(rating)}${"☆".repeat(5 - rating)}</td></tr>
-            <tr><td style="padding:8px 0;color:#666;vertical-align:top">Review</td><td style="padding:8px 0;font-weight:600">${escapeHtml(text)}</td></tr>
+            <tr><td style="padding:8px 0;color:#666;vertical-align:top">Review</td><td style="padding:8px 0;font-weight:600">${text}</td></tr>
           </table>
         </div>`;
       break;

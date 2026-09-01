@@ -6,10 +6,7 @@ import { ThemeProvider } from "@/context/ThemeContext";
 import { ToastProvider } from "@/context/ToastContext";
 import { WishlistProvider } from "@/context/WishlistContext";
 import CartDrawer from "@/components/cart/CartDrawer";
-import PushNotificationPrompt from "@/components/notifications/PushNotificationPrompt";
-import { Analytics } from "@vercel/analytics/next";
-import { SpeedInsights } from "@vercel/speed-insights/next";
-import { WHATSAPP_NUMBER } from "@/lib/config";
+
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
@@ -81,19 +78,6 @@ export default function RootLayout({
         }} />
       </head>
       <body className={`${inter.variable} font-sans bg-background text-foreground antialiased min-h-screen flex flex-col overflow-x-hidden selection:bg-accent selection:text-black`}>
-        <ThemeProvider>
-          <ToastProvider>
-            <WishlistProvider>
-              <CartProvider>
-                {children}
-                <CartDrawer />
-              </CartProvider>
-            </WishlistProvider>
-          </ToastProvider>
-
-          <PushNotificationPrompt />
-        </ThemeProvider>
-
         {/* JSON-LD Structured Data */}
         <script
           type="application/ld+json"

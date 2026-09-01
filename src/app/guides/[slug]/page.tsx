@@ -225,7 +225,7 @@ export default async function GuidePage({ params }: Props) {
                 Browse Store
               </Link>
               <Link
-                href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "254757512769"}`}
+                href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "254740610772"}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center rounded-full border border-default text-foreground px-6 py-3 text-sm font-bold hover:bg-surface hover:border-accent/30 active:scale-95 transition-all"

@@ -371,7 +371,7 @@ const categoryUrls = categories.map(cat => ({
   "@type": "LocalBusiness",
   "name": "Trivo Kenya",
   "image": "https://trivokenya.store/logo-transparent.svg",
-  "telephone": "+254757512769",
+   "telephone": "+254740610772",
   "email": "hello@trivokenya.store",
   "address": {
     "@type": "PostalAddress",

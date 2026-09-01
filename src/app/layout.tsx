@@ -6,6 +6,10 @@ import { ThemeProvider } from "@/context/ThemeContext";
 import { ToastProvider } from "@/context/ToastContext";
 import { WishlistProvider } from "@/context/WishlistContext";
 import CartDrawer from "@/components/cart/CartDrawer";
+import PushNotificationPrompt from "@/components/notifications/PushNotificationPrompt";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import { WHATSAPP_NUMBER } from "@/lib/config";
 
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });

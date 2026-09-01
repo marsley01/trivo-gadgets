@@ -41,7 +41,7 @@ export default function CheckoutPage() {
     const note = orderNote ? `\n\n*Note:* ${orderNote}` : "";
     const customerInfo = `\n\n*Customer:* ${name}\n*Phone:* ${phone}\n*Location:* ${location}`;
     const fullMessage = `Hi Trivo! I want to order:\n\n${checkoutItems.map((i) => `- ${i.name} x${i.quantity} @ KES ${i.price.toLocaleString()}`).join("\n")}\n\nTotal: KES ${cartTotal.toLocaleString()}\n\nPlease confirm availability.${customerInfo}${note}`;
-    const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "254757512769";
+    const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "254740610772";
     const fullLink = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(fullMessage)}`;
 
     window.open(fullLink, "_blank");

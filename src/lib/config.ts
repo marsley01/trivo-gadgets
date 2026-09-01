@@ -1,4 +1,4 @@
-export const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "254757512769";
+export const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "254740610772";
 
 export const generateWhatsAppLink = (productName: string, price: number, options?: Record<string, string>) => {
   let message = `Hi! I'd like to order *${productName}`;

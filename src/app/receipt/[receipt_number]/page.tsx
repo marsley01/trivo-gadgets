@@ -178,7 +178,7 @@ export default async function ReceiptPage({
               rel="noopener noreferrer"
               className="text-sm text-[#2563EB] hover:underline block"
             >
-              Questions? WhatsApp us: +254757512769
+              Questions? WhatsApp us: +254740610772
             </a>
             <p className="text-[10px] text-neutral-600">Keep this receipt for your records</p>
           </div>

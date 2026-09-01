@@ -110,7 +110,7 @@ export default function PrivacyPage() {
               <li><strong>Right to data portability</strong> — Receive your data in a structured, machine-readable format.</li>
               <li><strong>Right to object</strong> — Object to the processing of your data for direct marketing.</li>
             </ul>
-            <p>To exercise any of these rights, contact us via <a href="https://wa.me/254757512769" className="text-accent hover:underline">WhatsApp</a> or email hello@trivokenya.store. We will respond within 30 days as required by law.</p>
+            <p>To exercise any of these rights, contact us via <a href="https://wa.me/254740610772" className="text-accent hover:underline">WhatsApp</a> or email hello@trivokenya.store. We will respond within 30 days as required by law.</p>
 
             <h2>9. Children&apos;s Privacy</h2>
             <p>Our services are not directed to individuals under the age of 18. We do not knowingly collect personal data from minors. If we become aware that a minor has provided us with personal data, we will delete it promptly.</p>
@@ -121,7 +121,7 @@ export default function PrivacyPage() {
             <h2>11. Contact</h2>
             <p>If you have any questions, concerns, or requests regarding this policy or your data:</p>
             <ul>
-              <li><strong>WhatsApp:</strong> <a href="https://wa.me/254757512769" className="text-accent hover:underline">+254 757 512 769</a></li>
+              <li><strong>WhatsApp:</strong> <a href="https://wa.me/254740610772" className="text-accent hover:underline">+254 740 610 772</a></li>
               <li><strong>Email:</strong> hello@trivokenya.store</li>
               <li><strong>Website:</strong> trivokenya.store</li>
               <li><strong>Location:</strong> Nairobi, Kenya</li>

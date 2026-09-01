@@ -161,7 +161,7 @@ export default function TermsPage() {
               For questions, concerns, or inquiries regarding these terms:
             </p>
             <ul>
-              <li><strong>WhatsApp:</strong> <a href="https://wa.me/254757512769" className="text-accent hover:underline">+254 757 512 769</a></li>
+              <li><strong>WhatsApp:</strong> <a href="https://wa.me/254740610772" className="text-accent hover:underline">+254 740 610 772</a></li>
               <li><strong>Email:</strong> hello@trivokenya.store</li>
               <li><strong>Website:</strong> trivokenya.store</li>
               <li><strong>Location:</strong> Nairobi, Kenya</li>

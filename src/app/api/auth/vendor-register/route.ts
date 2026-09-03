@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { rateLimit } from "@/lib/rate-limiter";
+import { timingSafeEqual } from "@/lib/server-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +27,19 @@ export async function POST(req: NextRequest) {
   );
 
   try {
-    const { email, password, fullName, phone, businessName } = await req.json();
+    const { email, password, fullName, phone, businessName, secretCode } = await req.json();
+
+    // ── Secret check (timing-safe to prevent brute-force enumeration) ─────────
+    const expectedSecret = process.env.VENDOR_REGISTRATION_SECRET;
+    if (!expectedSecret) {
+      return NextResponse.json({ error: "Vendor registration is not configured." }, { status: 500 });
+    }
+    if (
+      typeof secretCode !== "string" ||
+      !timingSafeEqual(secretCode, expectedSecret)
+    ) {
+      return NextResponse.json({ error: "Invalid secret registration code. Access denied." }, { status: 403 });
+    }
 
     if (!email || !password || !businessName) {
       return NextResponse.json({ error: "Email, password, and business name are required." }, { status: 400 });

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { rateLimit } from "@/lib/rate-limiter";
 import { apiCacheHeaders } from "@/lib/cache";
+import { getCachedCjToken } from "@/lib/cj-utils";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
@@ -20,17 +23,43 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Product ID (pid) is required" }, { status: 400 });
   }
 
-  try {
-    const tokenController = new AbortController();
-    const tokenTimeout = setTimeout(() => tokenController.abort(), 8000);
-    const tokenRes = await fetch(new URL("/api/cj/token", req.url), {
-      method: "POST",
-      signal: tokenController.signal,
-    });
-    clearTimeout(tokenTimeout);
-    const tokenData = await tokenRes.json();
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() { return cookieStore.getAll(); },
+        setAll() {},
+      },
+    }
+  );
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+  }
 
-    if (!tokenRes.ok || !tokenData.accessToken) {
+  const { data: adminUser } = await supabase
+    .from("admin_users")
+    .select("id")
+    .eq("email", user.email || "")
+    .single();
+
+  if (!adminUser) {
+    const { data: vendorUser } = await supabase
+      .from("vendors")
+      .select("id")
+      .eq("email", user.email || "")
+      .single();
+    if (!vendorUser) {
+      return NextResponse.json({ error: "Forbidden: admin or vendor access required." }, { status: 403 });
+    }
+  }
+
+  try {
+    const accessToken = await getCachedCjToken();
+
+    if (!accessToken) {
       return NextResponse.json({ error: "Failed to get CJ access token" }, { status: 500 });
     }
 
@@ -41,7 +70,7 @@ export async function GET(req: NextRequest) {
     const productTimeout = setTimeout(() => productController.abort(), 15000);
     const res = await fetch(apiUrl.toString(), {
       method: "GET",
-      headers: { "CJ-Access-Token": tokenData.accessToken },
+      headers: { "CJ-Access-Token": accessToken },
       signal: productController.signal,
     });
     clearTimeout(productTimeout);

@@ -198,12 +198,12 @@ export default function AdminDashboardClient({
     setLoading(true);
     try {
       const [statsRes, productsRes, subsRes, ordersRes, vendorsRes, blogRes] = await Promise.all([
-        import("@/lib/actions/admin").then((m) => m.getAdminStatsFull()),
-        import("@/lib/actions/admin").then((m) => m.getAdminProducts()),
-        import("@/lib/actions/admin").then((m) => m.getAdminSubscribers()),
-        import("@/lib/actions/admin").then((m) => m.getAllOrders()),
-        import("@/lib/actions/admin").then((m) => m.getVendors()),
-        import("@/lib/actions/admin").then((m) => m.getBlogPosts()),
+        getAdminStatsFull(),
+        getAdminProducts(),
+        getAdminSubscribers(),
+        getAllOrders(),
+        getVendors(),
+        getBlogPosts(),
       ]);
       setStats(statsRes);
       setProducts(productsRes);
@@ -215,7 +215,7 @@ export default function AdminDashboardClient({
       addToast("Failed to refresh data", "error");
     }
     setLoading(false);
-  }, [addToast]);
+  }, [addToast, getAdminStatsFull, getAdminProducts, getAdminSubscribers, getAllOrders, getVendors, getBlogPosts]);
 
   // --- Product handlers ---
   const resetForm = () => {

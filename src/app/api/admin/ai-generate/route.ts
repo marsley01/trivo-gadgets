@@ -96,6 +96,24 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Authentication required." }, { status: 401 });
     }
 
+    // Verify the user is an admin or a vendor
+    const { data: adminUser } = await supabase
+      .from("admin_users")
+      .select("id")
+      .eq("email", user.email || "")
+      .single();
+
+    if (!adminUser) {
+      const { data: vendorUser } = await supabase
+        .from("vendors")
+        .select("id")
+        .eq("email", user.email || "")
+        .single();
+      if (!vendorUser) {
+        return NextResponse.json({ error: "Forbidden: admin or vendor access required." }, { status: 403 });
+      }
+    }
+
     const ip = req.headers.get("x-forwarded-for") || user.id;
     const { allowed, retryAfter } = rateLimit(`ai-generate:${ip}`, 10, 60000);
     if (!allowed) {

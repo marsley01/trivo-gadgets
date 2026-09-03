@@ -38,6 +38,8 @@ export async function sendAdminNotification(event: NotificationEvent): Promise<v
     case "new_review": {
       const { productName, customerName, rating, text } = event.data;
       const safeRating = Math.min(5, Math.max(1, Number.isFinite(rating) ? Math.trunc(rating) : 1));
+      const filledStars = "★★★★★".slice(0, safeRating);
+      const emptyStars = "☆☆☆☆☆".slice(0, 5 - safeRating);
       subject = `New Review — ${safeRating}★ on ${productName}`;
       html = `
         <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px">
@@ -45,7 +47,7 @@ export async function sendAdminNotification(event: NotificationEvent): Promise<v
           <table style="width:100%;border-collapse:collapse;font-size:14px">
             <tr><td style="padding:8px 0;color:#666">Product</td><td style="padding:8px 0;font-weight:600">${productName}</td></tr>
             <tr><td style="padding:8px 0;color:#666">Customer</td><td style="padding:8px 0;font-weight:600">${customerName}</td></tr>
-            <tr><td style="padding:8px 0;color:#666">Rating</td><td style="padding:8px 0;font-weight:600">${"★".repeat(safeRating)}${"☆".repeat(5 - safeRating)}</td></tr>
+            <tr><td style="padding:8px 0;color:#666">Rating</td><td style="padding:8px 0;font-weight:600">${filledStars}${emptyStars}</td></tr>
             <tr><td style="padding:8px 0;color:#666;vertical-align:top">Review</td><td style="padding:8px 0;font-weight:600">${text}</td></tr>
           </table>
         </div>`;
